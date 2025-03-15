@@ -31,5 +31,9 @@ public function items()
         return $this->belongsToMany(Product::class, 'order_items')
                     ->withPivot('quantity', 'price');
     }
+    public function delivery()
+{
+    return $this->hasOne(Delivery::class);
+}
 
 }

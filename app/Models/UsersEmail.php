@@ -23,4 +23,4 @@ class UsersEmail extends Model
             return $this->belongsTo(User::class);
         }
     }
-///// basics
+

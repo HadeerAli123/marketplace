@@ -48,6 +48,16 @@ public function spotModes()
     return $this->hasMany(SpotMode::class);
 }
 
+public function deliveries()
+{
+    return $this->hasMany(Delivery::class, 'driver_id');
+}
+public function carts()
+{
+    return $this->hasMany(Cart::class);
+}
+
+
 public function getEmailForVerification()
     {
         return $this->emails()->where('type', 'primary')->first()->email ?? $this->emails()->first()->email;
