@@ -4,7 +4,16 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Product;
+use App\Models\Category;
 
+use App\Models\ProductImage;
+use Illuminate\Support\Facades\DB;
+use App\Http\Resources\ProductResource;
+use App\Http\Resources\CategoryResource;
 class ProductController extends Controller
 {
     /**
@@ -45,10 +54,10 @@ class ProductController extends Controller
      
         try {
 
-            $user = Auth::user();
-            if (!$user || $user->role !== 'admin') {
-                return response()->json(['error' => 'Unauthorized: Only admins can create products.'], 403);
-            }
+            // $user = Auth::user();
+            // if (!$user || $user->role !== 'admin') {
+            //     return response()->json(['error' => 'Unauthorized: Only admins can create products.'], 403);
+            // }
 
             $validator = Validator::make($request->all(), [
                 'product_name' => 'required|string|max:255',
@@ -91,9 +100,6 @@ class ProductController extends Controller
                 return response()->json(['error' => 'Invalid category ID'], 400);
             }
     
-            if ($data['user_id'] != Auth::id()) {
-                return response()->json(['error' => 'Unauthorized: You can only create products for yourself.'], 403);
-            } 
 
             $image_path ='';
             if ($request->hasFile('cover_image')) {
@@ -144,7 +150,7 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Product $product)
     {
         return new ProductResource($product->load('category', 'user'));
     }
@@ -268,7 +274,7 @@ class ProductController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Product $product)
     {
     
         if (!$product) {

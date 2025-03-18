@@ -16,13 +16,22 @@ class User extends Authenticatable implements MustVerifyEmail{
      *
      * @var list<string>
      */
-    protected $fillable = ['first_name', 'last_name', 'username', 'role', 'phone', 'image'];
+    protected $fillable = ['first_name', 'last_name', 'username', 'role', 'phone', 'image','email', 'email_verified_at', 'password', 'remember_token',];
 
     /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
      */
+    protected $hidden = ['password', 'remember_token'];
+    protected function casts(): array
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+}
+
     public function emails()
     {
         return $this->hasMany(UsersEmail::class);
