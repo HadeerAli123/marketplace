@@ -18,6 +18,8 @@ class AuthController extends Controller
             'phone' => 'required|string|unique:users',
             'password' => 'required|string|min:6|confirmed',
             'terms' => 'accepted',
+            'first_name' => 'nullable|string',
+            'last_name' => 'nullable|string',
         ]);
 
         $user = User::create([
