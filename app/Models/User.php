@@ -6,17 +6,18 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail{
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable,HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
-    protected $fillable = ['first_name', 'last_name', 'username', 'role', 'phone', 'image','email', 'email_verified_at', 'password', 'remember_token',];
+    protected $fillable = ['first_name', 'last_name', 'username', 'role', 'phone', 'image','email', 'email_verified_at', 'password', 'remember_token',"secondary_email","primary_email"];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -31,11 +32,6 @@ class User extends Authenticatable implements MustVerifyEmail{
         'password' => 'hashed',
     ];
 }
-
-    public function emails()
-    {
-        return $this->hasMany(UsersEmail::class);
-    }
 
  
     public function addresses()
@@ -67,10 +63,10 @@ public function carts()
 }
 
 
-public function getEmailForVerification()
-    {
-        return $this->emails()->where('type', 'primary')->first()->email ?? $this->emails()->first()->email;
-    }
+// public function getEmailForVerification()
+//     {
+//         return $this->emails()->where('type', 'primary')->first()->email ?? $this->emails()->first()->email;
+//     }
 
     /**
      * 
@@ -83,29 +79,29 @@ public function getEmailForVerification()
     /**
      * 
      */
-    public function getAuthPassword()
-    {
-        return $this->emails()->where('type', 'primary')->first()->password ?? $this->emails()->first()->password;
-    }
+    // public function getAuthPassword()
+    // {
+    //     return $this->emails()->where('type', 'primary')->first()->password ?? $this->emails()->first()->password;
+    // }
 
     /**
      * 
      */
-    public function getRememberToken()
-    {
-        return $this->emails()->where('type', 'primary')->first()->remember_token ?? $this->emails()->first()->remember_token;
-    }
+    // public function getRememberToken()
+    // {
+    //     return $this->emails()->where('type', 'primary')->first()->remember_token ?? $this->emails()->first()->remember_token;
+    // }
 
     /**
      * 
      */
-    public function setRememberToken($value)
-    {
-        $email = $this->emails()->where('type', 'primary')->first() ?? $this->emails()->first();
-        if ($email) {
-            $email->update(['remember_token' => $value]);
-        }
-    }
+    // public function setRememberToken($value)
+    // {
+    //     $email = $this->emails()->where('type', 'primary')->first() ?? $this->emails()->first();
+    //     if ($email) {
+    //         $email->update(['remember_token' => $value]);
+    //     }
+    // }
 
     /**
      * 
