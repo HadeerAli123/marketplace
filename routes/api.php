@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
+use App\Http\Middleware\DriverMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProductController;
@@ -30,7 +32,7 @@ use App\Http\Controllers\AuthController;
                 return response()->json(['message' => 'Welcome Admin']);
             });
         });
-        
+
     });
 
 Route::get('/user', function (Request $request) {
