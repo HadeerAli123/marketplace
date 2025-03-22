@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MigrationController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
 use App\Http\Middleware\DriverMiddleware;
@@ -34,6 +35,8 @@ use App\Http\Controllers\AuthController;
         });
 
     });
+
+    Route::post('run-migrations', [MigrationController::class, 'runMigrations']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
