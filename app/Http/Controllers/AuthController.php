@@ -13,22 +13,42 @@ class AuthController extends Controller
      * Register a new user
      */
     public function register(Request $request)
-    {
-        $request->validate([
-            'phone' => 'required|string|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-            'terms' => 'accepted',
-            'first_name' => 'nullable|string',
-            'last_name' => 'nullable|string',
-        ]);
+{
+    $request->validate([
+        'phone' => 'required|string|unique:users',
+        'password' => 'required|string|min:6|confirmed',
+        'terms' => 'accepted',
+        'first_name' => 'nullable|string',
+        'last_name' => 'nullable|string',
+        'user_name' => 'nullable|string',
+        'role' => 'nullable|in:customer,admin,driver',
+        'image' => 'nullable|image',
+        'email' => 'nullable|email|unique:users,email',
+        'secondary_email' => 'nullable|email|unique:users,secondary_email',
+    ]);
 
-        $user = User::create([
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-        ]);
+    // إنشاء المستخدم
+    $user = User::create([
+        'phone' => $request->phone,
+        'password' => Hash::make($request->password),
+        'first_name' => $request->first_name,
+        'last_name' => $request->last_name,
+        'user_name' => $request->user_name,
+        'role' => $request->role,
+        'email' => $request->email,
+        'secondary_email' => $request->secondary_email,
+    ]);
 
-        return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
-    }
+    // إنشاء التوكن
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Account created successfully',
+        'user' => $user,
+        'token' => $token
+    ], 201);
+}
+
 
     /**
      * Login user
