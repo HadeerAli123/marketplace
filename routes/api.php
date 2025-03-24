@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AdminDashbordController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
@@ -32,6 +33,9 @@ use App\Http\Controllers\AuthController;
             Route::get('/admin/dashboard', function () {
                 return response()->json(['message' => 'Welcome Admin']);
             });
+
+            Route::get('/drivers', [AdminDashbordController::class, 'getDrivers']);
+
         });
 
     });
