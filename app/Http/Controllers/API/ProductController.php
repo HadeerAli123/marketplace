@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Product;
 use App\Models\Category;
-
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\ProductResource;
@@ -20,8 +19,8 @@ class ProductController extends Controller
      * Display a listing of the resource.
      */
 
-
-     public function getProductsByCategory($categoryId)
+/// test ok
+public function getProductsByCategory($categoryId)
 {
     try {
         $category = Category::find($categoryId);
@@ -31,20 +30,37 @@ class ProductController extends Controller
         }
 
         $products = Product::where('category_id', $categoryId)
-                          ->with('images:id,product_id,image') 
-                          ->select(['id', 'product_name', 'price']) 
-                          ->get();
+                           ->whereNull('deleted_at')
+                           ->with(['images:id,product_id,image,created_at,updated_at'])
+                           ->select(['id', 'product_name', 'price', 'stock', 'description', 'cover_image',])
+                           ->paginate(10);
 
-        return response()->json(['message' => 'Products retrieved successfully', 'data' => $products], 200);
+        return response()->json([
+            'message' => 'Products retrieved successfully',
+            'data' => ProductResource::collection($products)
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+
+}
+/// test ok
+public function index()
+{
+    try {
+        $products = Product::whereNull('deleted_at')
+                           ->with(['images:id,product_id,image,created_at,updated_at', 'category'])
+                           ->select(['id', 'product_name', 'price', 'stock', 'description', 'cover_image','category_id'])
+                           ->paginate(10); 
+        return response()->json([
+            'message' => 'Products retrieved successfully',
+            'data' => ProductResource::collection($products)
+        ], 200);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
-    public function index()
-    {
-    $products=Product::with('images:id,product_id,image')->select(['id','product_name','price'])
-    ->get();
-    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -54,10 +70,10 @@ class ProductController extends Controller
      
         try {
 
-            // $user = Auth::user();
-            // if (!$user || $user->role !== 'admin') {
-            //     return response()->json(['error' => 'Unauthorized: Only admins can create products.'], 403);
-            // }
+            $user = Auth::user();
+            if (!$user || $user->role !== 'admin') {
+                return response()->json(['error' => 'Unauthorized: Only admins can create products.'], 403);
+            }
 
             $validator = Validator::make($request->all(), [
                 'product_name' => 'required|string|max:255',
@@ -150,9 +166,11 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
+
+     ///test ok
     public function show(Product $product)
     {
-        return new ProductResource($product->load('category', 'user'));
+        return new ProductResource($product->load('category','user'));
     }
 
     /**
@@ -274,6 +292,8 @@ class ProductController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+
+     ///test ok
     public function destroy(Product $product)
     {
     
@@ -284,7 +304,7 @@ class ProductController extends Controller
         return response()->json(['message' => 'Product soft deleted successfully.']);
     }
         
-    
+    //// test ok
     public function restore($product_id)
     {
         $product = Product::withTrashed()->find($product_id);

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     
     protected $fillable = [
         'product_name',
@@ -19,6 +19,8 @@ class Product extends Model
         'user_id',
         'category_id',
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function user()
     {
