@@ -56,14 +56,13 @@ Route::get('/products/restore/{product_id}',
     ->middleware('auth:sanctum');
 Route::apiResource('orders', OrderController::class)->middleware('auth:sanctum');
 Route::apiResource('order-items', OrderItemsController::class);
-Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('products', ProductController::class)->only([ 'store','update', 'destroy']);
-    Route::delete('products/{id}/force-delete', [ProductController::class, 'forceDestroy']); ///test
-    });
+Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
+    Route::apiResource('products', ProductController::class)->only(['store', 'update', 'destroy']);
+    Route::delete('products/{id}/force-delete', [ProductController::class, 'forceDestroy']);
+});
 
-
-    Route::apiResource('products', ProductController::class)->only(['index', 'show']);
-    Route::get('products/byCategory/{category}', [ProductController::class, 'getProductsByCategory']);
+Route::apiResource('products', ProductController::class)->only(['index', 'show']);
+Route::get('products/byCategory/{category}', [ProductController::class, 'getProductsByCategory']);
 
     Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
