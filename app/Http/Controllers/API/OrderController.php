@@ -107,98 +107,101 @@ class OrderController extends Controller
      * Store a newly created resource in storage.
      */
     public function createOrder()
-    {
-        $userId = auth()->id();
-    
-        $cart = Cart::where('user_id', $userId)
-                    ->where('status', 'pending')
-                    ->with('cartItems.product')
-                    ->first();
+{
+    $userId = auth()->id();
 
-        if (!$cart || $cart->cartItems->isEmpty()) {
-            return response()->json(['error' => 'Cart is empty'], 400);
-        }
+    $cart = Cart::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->with('Items.product')
+                ->first();
 
-        $shippingAddress = UsersAddress::where('user_id', $userId)
-                                      ->where('type', 'shipping')
-                                      ->first();
+    if (!$cart || $cart->Items->isEmpty()) {
+        return response()->json(['error' => 'Cart is empty'], 400);
+    }
 
-        if (!$shippingAddress) {
-            return response()->json(['error' => 'No shipping address found'], 400);
-        }
+    $shippingAddress = UsersAddress::where('user_id', $userId)
+                                  ->where('type', 'shipping')
+                                  ->first();
 
-        $currentTime = now();
-        $orderDate = $currentTime->hour >= 6 ? $currentTime->toDateString() : $currentTime->subDay()->toDateString();
+    if (!$shippingAddress) {
+        return response()->json(['error' => 'No shipping address found'], 400);
+    }
 
-        $isSpotModeActive = SpotMode::isActive();
-        $spotMode = $isSpotModeActive ? SpotMode::where('status', 'active')->first() : SpotMode::where('status', 'not_active')->first();
-        $sale = $spotMode ? $spotMode->sale : 0;
+    $currentTime = now();
+    $orderDate = $currentTime->hour >= 6 ? $currentTime->toDateString() : $currentTime->subDay()->toDateString();
 
-        DB::beginTransaction();
+    $isSpotModeActive = SpotMode::isActive();
+    $spotMode = $isSpotModeActive ? SpotMode::where('status', 'active')->first() : SpotMode::where('status', 'not_active')->first();
+    $sale = $spotMode ? $spotMode->sale : 0;
 
-        try {
-            $order = Order::create([
-                'user_id' => $userId,
-                'last_status' => 'pending',
-                'date' => $orderDate,
-            ]);
+    DB::beginTransaction();
 
-            $totalOrderPrice = 0;
+    try {
+        $order = Order::create([
+            'user_id' => $userId,
+            'last_status' => 'pending',
+            'date' => $orderDate,
+        ]);
 
-            foreach ($cart->cartItems as $cartItem) {
-                $product = $cartItem->product;
+        $totalOrderPrice = 0;
 
-                if ($product->stock <= 0) {
-                    throw new \Exception('Product ' . $product->name . ' is out of stock');
-                }
+        foreach ($cart->Items as $cartItem) {
+            $product = $cartItem->product;
 
-                if ($cartItem->quantity > $product->stock) {
-                    throw new \Exception('Requested quantity for ' . $product->name . ' exceeds available stock');
-                }
-
-                $basePrice = $product->price;
-                $price = $isSpotModeActive ? max(0, $basePrice - ($basePrice * $sale / 100)) : $basePrice;
-                $totalPrice = $price * $cartItem->quantity;
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $cartItem->product_id,
-                    'quantity' => $cartItem->quantity,
-                    'price' => $price,
-                    'total_price' => $totalPrice,
-                ]);
-
-                $totalOrderPrice += $totalPrice;
-
-                $product->stock -= $cartItem->quantity;
-                $product->save();
+            if ($product->stock <= 0) {
+                throw new \Exception('Product ' . $product->name . ' is out of stock');
             }
 
-            $order->update(['total_price' => $totalOrderPrice]);
+            if ($cartItem->quantity > $product->stock) {
+                throw new \Exception('Requested quantity for ' . $product->name . ' exceeds available stock');
+            }
 
-            $cart->cartItems()->delete();
-            $cart->delete();
+            $basePrice = $product->price;
+            $price = $isSpotModeActive ? max(0, $basePrice - ($basePrice * $sale / 100)) : $basePrice;
+            $totalPrice = $price * $cartItem->quantity;
 
-            Delivery::create([
+            OrderItem::create([
                 'order_id' => $order->id,
-                'user_id' => $userId,
-                'address' => $shippingAddress->address,
-                'status' => 'pending',
+                'product_id' => $cartItem->product_id,
+                'quantity' => $cartItem->quantity,
+                'price' => $price,
+                'total_price' => $totalPrice,
             ]);
 
-            DB::commit();
+            $totalOrderPrice += $totalPrice;
 
-            return response()->json([
-                'message' => 'Order placed successfully',
-                'order_id' => $order->id,
-                'total_price' => $order->total_price,
-            ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Checkout failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Checkout failed: ' . $e->getMessage()], 500);
+            $product->stock -= $cartItem->quantity;
+            $product->save();
         }
+
+        $order->update(['total_price' => $totalOrderPrice]);
+
+        $order->refresh();
+        
+        $cart->update(['status' => 'confirmed']);
+        
+        Delivery::create([
+            'order_id' => $order->id,
+            'user_id' => $userId,
+            'address' => $shippingAddress->address,
+            'status' => 'new',
+        ]);
+        
+        DB::commit();
+        
+        return response()->json([
+            'message' => 'Order placed successfully',
+            'order_id' => $order->id,
+            'total_price' => $order->total_price,
+        ], 201);
+        
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Checkout failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Checkout failed: ' . $e->getMessage()], 500);
+    }
+
     }
 
     public function updateOrder(Request $request, $orderId)

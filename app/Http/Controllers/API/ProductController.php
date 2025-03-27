@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\SpotMode;
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\ProductImageResource;
 use App\Http\Resources\CategoryResource;
 class ProductController extends Controller
 {
@@ -66,6 +68,45 @@ public function index()
      * Store a newly created resource in storage.
      */
 
+     ///test
+     public function productDetails($id)
+     {
+         try {
+             $product = Product::with(['category', 'images'])->find($id);
+ 
+             if (!$product) {
+                 return response()->json(['error' => 'Product not found'], 404);
+             }
+ 
+             $isSpotModeActive = SpotMode::isActive();
+             $spotMode = $isSpotModeActive ? SpotMode::where('status', 'active')->first() : SpotMode::where('status', 'not_active')->first();
+             $sale = $spotMode ? $spotMode->sale : 0;
+ 
+             $price = $isSpotModeActive ? max(0, $product->price - ($product->price * $sale / 100)) : $product->price;
+ 
+             return response()->json([
+                 'status' => 'success',
+                 'product' => [
+                     'id' => $product->id,
+                     'product_name' => $product->product_name,
+                     'price' => $price,
+                     'description' => $product->description,
+                     'cover_image' => $product->cover_image,
+                     'category' => new CategoryResource($product->category),
+                     'images' => ProductImageResource::collection($product->images),
+                 ],
+             ], 200);
+ 
+         } catch (\Exception $e) {
+             return response()->json(['error' => $e->getMessage()], 500);
+         }
+     }
+ 
+
+
+
+
+     
      ////test ok
     public function store(Request $request)
     {

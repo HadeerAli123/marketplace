@@ -63,6 +63,9 @@ Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
 
 Route::apiResource('products', ProductController::class)->only(['index', 'show']);
 Route::get('products/byCategory/{category}', [ProductController::class, 'getProductsByCategory']);
+Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
+    Route::get('/products/details/{id}', [ProductController::class, 'productDetails']);
+});
 
     Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
