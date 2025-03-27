@@ -8,6 +8,7 @@ use App\Http\Middleware\DriverMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CartItemsController;
 use App\Http\Controllers\Api\OrderController;
@@ -98,7 +99,10 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::get('/cart-items/my-items', [CartItemsController::class , 'getMyItems']);
     });
 
-
+    Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
+        Route::apiResource('categories', CategoryController::class)
+            ->only(['store', 'update', 'destroy']);
+    });
 
 
 
