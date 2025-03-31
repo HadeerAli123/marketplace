@@ -7,12 +7,12 @@ use App\Http\Middleware\CustomerMiddleware;
 use App\Http\Middleware\DriverMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\CartController;
-use App\Http\Controllers\Api\CartItemsController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\OrderItemsController;
+use App\Http\Controllers\ApI\ProductController;
+use App\Http\Controllers\ApI\CategoryController;
+use App\Http\Controllers\ApI\CartController;
+use App\Http\Controllers\ApI\CartItemsController;
+use App\Http\Controllers\ApI\OrderController;
+use App\Http\Controllers\ApI\OrderItemsController;
 
 use App\Http\Controllers\AuthController;
 
