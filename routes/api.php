@@ -75,6 +75,15 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::post('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
         Route::delete('/orders/{orderId}', [OrderController::class, 'cancelOrder']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::get('/cart', [CartController::class, 'index']);
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::put('/cart/{id}', [CartController::class, 'update']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+    
+        Route::post('/cart-items', [CartItemsController::class, 'store']);
+        Route::put('/cart-items/{id}', [CartItemsController::class, 'update']);
+        Route::delete('/cart-items/{id}', [CartItemsController::class, 'destroy']);
+        Route::get('/cart-items/my-items', [CartItemsController::class , 'getMyItems']);
     });
     
     Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
@@ -87,17 +96,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::get('/admin/orders', [OrderController::class, 'adminOrderDetails']);
         Route::post('/orders/assign', [OrderController::class, 'assignOrdersToDriver']);
     });
-    Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
-        Route::get('/cart', [CartController::class, 'index']);
-        Route::post('/cart', [CartController::class, 'store']);
-        Route::put('/cart/{id}', [CartController::class, 'update']);
-        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
-    
-        Route::post('/cart-items', [CartItemsController::class, 'store']);
-        Route::put('/cart-items/{id}', [CartItemsController::class, 'update']);
-        Route::delete('/cart-items/{id}', [CartItemsController::class, 'destroy']);
-        Route::get('/cart-items/my-items', [CartItemsController::class , 'getMyItems']);
-    });
+
 
     Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
         Route::apiResource('categories', CategoryController::class)
