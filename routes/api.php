@@ -108,11 +108,10 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::apiResource('categories', CategoryController::class)
             ->only(['store', 'update', 'destroy']);
     });
-
-    Route::post('contact-messages', [ContactUsController::class, 'store']);
     Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('contact-messages', ContactUsController::class)->only(['index', 'destroy']);
     });
+Route::post('contact-messages', [ContactUsController::class, 'store']);
 
 
 
