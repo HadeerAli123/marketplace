@@ -215,11 +215,11 @@ public function index()
     try {
         $validator = Validator::make($request->all(), [
             'product_name' => 'required|string|max:255',
-            'cover_image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'cover_image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
             'price' => 'required|numeric',
             'description' => 'nullable|string',
             'images' => 'nullable|array',
-            'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
             'stock' => 'required|integer',
             'category_id' => 'required|integer|exists:categories,id',
         ], [
@@ -246,7 +246,7 @@ public function index()
 
         $data = $validator->validated();
 
-        $product = Product::find($id); // استخدام $id من الـ Route
+        $product = Product::find($id);
         if (!$product) {
             return response()->json(['error' => 'Product not found'], 404);
         }
@@ -268,14 +268,14 @@ public function index()
                     Storage::disk('products')->delete($relativeImagePath);
                 }
             }
-            $path = $data['cover_image']->store('cover_images', 'products');
-            $path = asset('uploads/products/' . $path);
-            $image_path = $path;
+            $path = $request->file('cover_image')->store('cover_images', 'products');
+            $image_path = asset('uploads/products/' . $path);
         }
 
         $product->product_name = $data['product_name'];
         $product->price = $data['price'];
-        $product->description = $data['description'];
+        // تحديث الـ description بس لو فيه قيمة جديدة
+        $product->description = isset($data['description']) ? $data['description'] : $product->description;
         $product->stock = $data['stock'];
         $product->cover_image = $image_path;
         $product->category_id = $data['category_id'];
@@ -292,22 +292,24 @@ public function index()
                 $image->delete();
             }
 
-            foreach ($data['images'] as $image) {
+            foreach ($request->file('images') as $image) {
                 $path = $image->store('images', 'products');
-                $path = asset('uploads/products/' . $path);
+                $image_path = asset('uploads/products/' . $path);
                 $productImage = new ProductImage();
                 $productImage->product_id = $product->id;
-                $productImage->image = $path;
+                $productImage->image = $image_path;
                 $productImage->save();
             }
         }
+
+        // تحميل العلاقة images عشان تظهر في الـ Response
+        $product->load('images');
 
         return response()->json(['message' => 'Product updated successfully', 'product' => $product], 200);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
-
-    }
+}
 
     /**
      * Remove the specified resource from storage.
