@@ -13,7 +13,7 @@ use App\Http\Controllers\API\CartController;
 use App\Http\Controllers\API\CartItemsController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\OrderItemsController;
-
+use App\Http\Controllers\API\ContactUsController;
 use App\Http\Controllers\AuthController;
 
     Route::post('/register', [AuthController::class, 'register']);
@@ -104,6 +104,10 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
             ->only(['store', 'update', 'destroy']);
     });
 
+    Route::post('contact-messages', [ContactUsController::class, 'store']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::apiResource('contact-messages', ContactUsController::class)->only(['index', 'destroy']);
+    });
 
 
 
