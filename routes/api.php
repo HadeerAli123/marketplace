@@ -37,7 +37,18 @@ use App\Http\Controllers\AuthController;
                 return response()->json(['message' => 'Welcome Admin']);
             });
 
-            Route::get('/drivers', [AdminDashbordController::class, 'getDrivers']);
+            Route::get('drivers', [AdminDashbordController::class, 'getDrivers']);
+            Route::get('dashbord-orders', [AdminDashbordController::class, 'getOrders']);
+            Route::get('categories', [AdminDashbordController::class, 'getCategories']);
+            Route::get('categories/{id}', [AdminDashbordController::class, 'getCategory']);
+            Route::post('categories', [AdminDashbordController::class, 'createCategory']);
+            Route::post('categories/{id}', [AdminDashbordController::class, 'updateCategory']);
+            Route::delete('categories/{id}', [AdminDashbordController::class, 'deleteCategory']);
+            Route::get('daily-summaries', [AdminDashbordController::class, 'getDailySummaries']);
+            Route::get('daily-customer-summaries', [AdminDashbordController::class, 'getDailyCustomerSummaries']);
+            Route::get('customers', [AdminDashbordController::class, 'getCustomers']);
+            Route::post('add-driver', [AdminDashbordController::class, 'addDriver']);
+
 
         });
 
@@ -104,10 +115,10 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
     });
   
 
-    Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
-        Route::apiResource('categories', CategoryController::class)
-            ->only(['store', 'update', 'destroy']);
-    });
+    // Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
+    //     Route::apiResource('categories', CategoryController::class)
+    //         ->only(['store', 'update', 'destroy']);
+    // });
 
 
 
