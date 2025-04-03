@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Category;
+use App\Http\Resources\CategoryResource;
 
 class CategoryController extends Controller
 {
@@ -14,8 +15,11 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        //
+
+        $categories = Category::all();
+        return CategoryResource::collection($categories);
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -55,9 +59,7 @@ class CategoryController extends Controller
                 $my_path=$image->store('images','category_image');
                 $my_path= asset('uploads/categories/' . $my_path); 
             }
-     // لو كل ده صح هنكريت اوبجكت من الكاتيجوري من الموديل يعني
-    
-            // $data = $validator->validated();
+   
             $category = new Category();
     
             $category->category_name = $request->category_name;
@@ -77,24 +79,63 @@ class CategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Category $category)
     {
-        //
+        try {
+            return new CategoryResource($category);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+    public function update(Request $request, Category $category)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'category_name' => 'required|string|max:255|unique:categories,category_name,' . $category->id,
+            'description' => 'required|string|max:500',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $my_path = $category->image;
+        if ($request->hasFile("image")) {
+            if ($category->image) {
+                $oldPath = str_replace(url('uploads/categories/') . '/', '', $category->image);
+                if (Storage::disk('category_image')->exists($oldPath)) {
+                    Storage::disk('category_image')->delete($oldPath);
+                }
+            }
+
+            $image = $request->file("image");
+            $my_path = $image->store('images', 'category_image');
+            $my_path = asset('uploads/categories/' . $my_path);
+        }
+
+        $category->category_name = $request->category_name;
+        $category->description = $request->description;
+        $category->image = $my_path;
+        $category->save();
+
+        return response()->json(['message' => 'Category updated successfully', 'category' => new CategoryResource($category)], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Category $category)
     {
-        //
+
+        $category->delete();
+        return response()->json(['message' => 'Category deleted successfully'], 200);
+    
     }
 }
