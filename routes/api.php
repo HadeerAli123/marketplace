@@ -117,13 +117,6 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
   
 
 
-    Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
-        Route::apiResource('categories', CategoryController::class)
-            ->only(['store', 'update', 'destroy']);
-    });
-
-
-
     Route::get('categories', [CategoryController::class, 'index']); 
     Route::get('categories/{category}', [CategoryController::class, 'show']);
     Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
