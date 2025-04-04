@@ -53,6 +53,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'secondary_email' => $request->secondary_email,
             'image' => $imagePath,
+            'status' => 'inactive',
         ]);
 
         // Store OTP in cache
@@ -108,7 +109,8 @@ class AuthController extends Controller
 
         $user = User::where('phone', $request->phone)->first();
         $token = $user->createToken('auth_token')->plainTextToken;
-
+        $user->status = 'active';
+        $user->save();
         return response()->json([
             'status' => true,
             'message' => 'OTP verified successfully.',
@@ -132,8 +134,14 @@ class AuthController extends Controller
         if (!Auth::attempt(['phone' => $request->phone, 'password' => $request->password])) {
             return response()->json(['message' => 'Invalid phone or password'], 401);
         }
-
         $user = Auth::user();
+
+        if ($user->status !== 'active') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Account is not activated. Please verify your OTP.',
+            ], 403);
+        }
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['message' => 'Login successful', 'token' => $token, 'user' => $user]);
