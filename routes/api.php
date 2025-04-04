@@ -16,8 +16,9 @@ use App\Http\Controllers\API\OrderItemsController;
 use App\Http\Controllers\API\ContactUsController;
 use App\Http\Controllers\AuthController;
 
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/login', [AuthController::class, 'login']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -48,6 +49,7 @@ use App\Http\Controllers\AuthController;
             Route::get('daily-customer-summaries', [AdminDashbordController::class, 'getDailyCustomerSummaries']);
             Route::get('customers', [AdminDashbordController::class, 'getCustomers']);
             Route::post('add-driver', [AdminDashbordController::class, 'addDriver']);
+            Route::get('stats', [AdminDashbordController::class, 'getStats']);
 
 
         });
