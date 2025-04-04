@@ -8,7 +8,6 @@ use App\Http\Middleware\DriverMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ProductController;
-use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\CartController;
 use App\Http\Controllers\API\CartItemsController;
 use App\Http\Controllers\API\OrderController;
@@ -114,14 +113,6 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::get('/admin/orders', [OrderController::class, 'adminOrderDetails']);
         Route::post('/orders/assign', [OrderController::class, 'assignOrdersToDriver']);
     });
-  
-    Route::get('categories', [CategoryController::class, 'index']); 
-    Route::get('categories/{category}', [CategoryController::class, 'show']);
-    Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
-        Route::apiResource('categories', CategoryController::class)
-            ->only(['store', 'update', 'destroy']);
-    });
-  
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('contact-messages', ContactUsController::class)->only(['index', 'destroy']);
