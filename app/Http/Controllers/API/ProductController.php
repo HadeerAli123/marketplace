@@ -274,7 +274,7 @@ public function index()
 
         $product->product_name = $data['product_name'];
         $product->price = $data['price'];
-        // تحديث الـ description بس لو فيه قيمة جديدة
+      
         $product->description = isset($data['description']) ? $data['description'] : $product->description;
         $product->stock = $data['stock'];
         $product->cover_image = $image_path;
@@ -302,7 +302,7 @@ public function index()
             }
         }
 
-        // تحميل العلاقة images عشان تظهر في الـ Response
+  
         $product->load('images');
 
         return response()->json(['message' => 'Product updated successfully', 'product' => $product], 200);
