@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,8 +17,6 @@ class AuthController extends Controller
    /**
      * Register a new user
      */
-
-
     public function register(Request $request)
     {
         $request->validate([
@@ -33,16 +32,13 @@ class AuthController extends Controller
             'secondary_email' => 'nullable|email|unique:users,secondary_email',
         ]);
 
-        // Upload image if exists
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = ImageService::upload($request->file('image'), 'user_photos');
         }
 
-        // Generate OTP
         $otp = 1234;
 
-        // Create the user but don't authenticate yet
         $user = User::create([
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
@@ -56,7 +52,6 @@ class AuthController extends Controller
             'status' => 'inactive',
         ]);
 
-        // Store OTP in cache
         Cache::put('otp_' . $user->phone, $otp, now()->addMinutes(10));
 
         // // Send OTP via email
@@ -166,18 +161,152 @@ class AuthController extends Controller
         $request->validate([
             'first_name' => 'nullable|string',
             'last_name' => 'nullable|string',
+            'username' => 'nullable|string',
             'phone' => 'nullable|string',
-            'primary_email' => 'nullable|email|unique:users,primary_email,' . $user->id,
+            'email' => 'nullable|email|unique:users,email,' . $user->id,
             'secondary_email' => 'nullable|email|unique:users,secondary_email,' . $user->id,
-            'password' => 'nullable|string|min:6',
+            'image' => 'nullable|image|max:2048',
         ]);
 
-        $user->update($request->only(['first_name', 'last_name', 'phone', 'primary_email', 'secondary_email']));
+        $data = $request->only(['first_name', 'last_name', 'phone', 'email', 'secondary_email','username']);
 
-        if ($request->password) {
-            $user->update(['password' => Hash::make($request->password)]);
+        if ($request->hasFile('image')) {
+            if ($user->image) {
+                ImageService::delete($user->image);
+            }
+
+            $imagePath = ImageService::upload($request->file('image'), 'user_photos');
+            $data['image'] = $imagePath;
         }
 
-        return response()->json(['message' => 'Profile updated successfully', 'user' => $user]);
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user
+        ]);
     }
+
+
+
+
+    public function deleteAccount(Request $request)
+    {
+        $user = Auth::user();
+
+        $user->tokens()->delete();
+
+        $user->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Your account has been deleted successfully.',
+        ]);
+    }
+
+
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Current password is incorrect.',
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password changed successfully.',
+        ]);
+    }
+
+        public function sendOtpForPasswordReset(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|exists:users,phone',
+        ]);
+
+        $otp = 1234;
+        Cache::put('reset_otp_' . $request->phone, $otp, now()->addMinutes(10));
+
+        // TODO: Send OTP via SMS
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'OTP sent to your phone.',
+        ]);
+    }
+
+    public function verifyResetOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|exists:users,phone',
+            'otp' => 'required|numeric',
+        ]);
+
+        $cachedOtp = Cache::get('reset_otp_' . $request->phone);
+
+        if (!$cachedOtp || $cachedOtp != $request->otp) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid or expired OTP.',
+            ], 422);
+        }
+
+        Cache::put('otp_verified_' . $request->phone, true, now()->addMinutes(10));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'OTP verified. You can now reset your password.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|exists:users,phone',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if (!Cache::get('otp_verified_' . $request->phone)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'OTP verification required.',
+            ], 403);
+        }
+
+        $user = User::where('phone', $request->phone)->first();
+
+        if (Hash::check($request->new_password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'New password must not be the same as the old password.',
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        Cache::forget('otp_verified_' . $request->phone);
+        Cache::forget('reset_otp_' . $request->phone);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password has been reset successfully.',
+        ]);
+    }
+
+
 }

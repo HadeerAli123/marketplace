@@ -19,10 +19,16 @@ use App\Http\Controllers\AuthController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->delete('delete-account', [AuthController::class, 'deleteAccount']);
+Route::middleware('auth:sanctum')->post('change-password', [AuthController::class, 'changePassword']);
+
+Route::post('forgot-password/send-otp', [AuthController::class, 'sendOtpForPasswordReset']);
+Route::post('forgot-password/verify-otp', [AuthController::class, 'verifyResetOtp']);
+Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::put('/profile', [AuthController::class, 'editProfile']);
+        Route::post('edit-profile', [AuthController::class, 'editProfile']);
 
         Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
             Route::get('customer/dashboard', function () {

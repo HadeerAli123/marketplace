@@ -75,49 +75,42 @@ class UserAddressesController extends Controller
     }
 
     public function update(Request $request, $id)
-{
-    $user = Auth::user();
-    $address = UsersAddress::where('user_id', $user->id)->findOrFail($id);
-
-    $request->validate([
-        'country' => 'required|string',
-        'state' => 'nullable|string',
-        'zip_code' => 'nullable|string',
-        'city' => 'required|string',
-        'address' => 'required|string',
-        'type' => 'required|in:billing,shipping',
-        'company_name' => 'nullable|string',
-    ]);
-
-    if ($address->type !== $request->type) {
-        $existingAddress = UsersAddress::where('user_id', $user->id)
-            ->where('type', $request->type)
-            ->where('id', '!=', $id)
-            ->first();
-
-       
-        if ($existingAddress) {
-            $existingAddress->delete();
-        }
-    }
-
+    {
+        $user = Auth::user();
+        $address = UsersAddress::where('user_id', $user->id)->findOrFail($id);
     
-    $address->update([
-        'country' => $request->country,
-        'state' => $request->state,
-        'zip_code' => $request->zip_code,
-        'city' => $request->city,
-        'address' => $request->address,
-        'type' => $request->type,
-        'company_name' => $request->company_name,
-    ]);
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Address updated successfully',
-        'data' => $address,
-    ], 200);
-}
+        $request->validate([
+            'country' => 'nullable|string',
+            'state' => 'nullable|string',
+            'zip_code' => 'nullable|string',
+            'city' => 'nullable|string',
+            'address' => 'nullable|string',
+            'type' => 'nullable|in:billing,shipping',
+            'company_name' => 'nullable|string',
+        ]);
+    
+        $data = $request->only(['country', 'state', 'zip_code', 'city', 'address', 'type', 'company_name']);
+    
+        if ($address->type !== $request->type) {
+            $existingAddress = UsersAddress::where('user_id', $user->id)
+                ->where('type', $request->type)
+                ->where('id', '!=', $id)
+                ->first();
+    
+            if ($existingAddress) {
+                $existingAddress->delete();
+            }
+        }
+    
+        $address->update(array_filter($data));
+    
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Address updated successfully',
+            'data' => $address,
+        ], 200);
+    }
+    
 
     public function destroy($id)
     {
