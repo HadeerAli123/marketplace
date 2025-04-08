@@ -202,7 +202,7 @@ class AdminDashbordController extends Controller
     public function getCustomers()
     {
         $customers = User::where('role', 'customer')
-            ->select('phone', 'created_at', 'status', \DB::raw("CONCAT(first_name, ' ', last_name) AS full_name"))
+            ->select('id','phone', 'created_at', 'status', \DB::raw("CONCAT(first_name, ' ', last_name) AS full_name"))
             ->get();
 
         return response()->json($customers);
@@ -252,5 +252,76 @@ class AdminDashbordController extends Controller
 
         // return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
         return new UserResource($user);
+    }
+
+
+    public function getStats()
+    {
+        $today = Carbon::today();
+        $lastWeekStart = Carbon::now()->subWeek()->startOfWeek();
+        $lastWeekEnd = Carbon::now()->subWeek()->endOfWeek();
+
+        $ordersLastWeek = Order::whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
+            ->selectRaw('DAYOFWEEK(created_at) as day_of_week, COUNT(*) as total_orders')
+            ->groupBy('day_of_week')
+            ->orderBy('day_of_week')
+            ->get();
+
+        $ordersPerMonth = Order::selectRaw('MONTH(created_at) as month, SUM(total_amount) as total_amount')
+            ->whereYear('created_at', $today->year)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $activeUsersCount = User::where('status', 'active')->count();
+        $inactiveUsersCount = User::where('status', 'inactive')->count();
+
+        $totalUsersCount = $activeUsersCount + $inactiveUsersCount;
+        $activeUserPercentage = $totalUsersCount > 0 ? ($activeUsersCount / $totalUsersCount) * 100 : 0;
+        $inactiveUserPercentage = $totalUsersCount > 0 ? ($inactiveUsersCount / $totalUsersCount) * 100 : 0;
+
+        // 4. عدد الطلبات اليوم
+        $ordersToday = Order::whereDate('created_at', $today)->count();
+
+        // 5. نسبة الزيادة في الطلبات اليوم مقارنة بالأمس
+        $ordersYesterday = Order::whereDate('created_at', $today->yesterday())->count();
+        $orderIncreasePercentage = $ordersYesterday > 0 ? (($ordersToday - $ordersYesterday) / $ordersYesterday) * 100 : 0;
+
+        // 6. عدد المستخدمين اليوم
+        $usersToday = User::whereDate('created_at', $today)->count();
+
+        // 7. نسبة الزيادة في المستخدمين اليوم مقارنة بالأمس
+        $usersYesterday = User::whereDate('created_at', $today->yesterday())->count();
+        $userIncreasePercentage = $usersYesterday > 0 ? (($usersToday - $usersYesterday) / $usersYesterday) * 100 : 0;
+
+        // 8. عدد المنتجات اليوم
+        $productsToday = Order::whereDate('created_at', $today)->sum('products_count');
+
+        // 9. نسبة الزيادة في المنتجات اليوم مقارنة بالأمس
+        $productsYesterday = Order::whereDate('created_at', $today->yesterday())->sum('products_count');
+        $productIncreasePercentage = $productsYesterday > 0 ? (($productsToday - $productsYesterday) / $productsYesterday) * 100 : 0;
+
+        // 10. عدد السائقين اليوم
+        $driversToday = User::whereDate('created_at', $today)->where('role', 'driver')->count();
+
+        // 11. نسبة الزيادة في السائقين اليوم مقارنة بالأمس
+        $driversYesterday = User::whereDate('created_at', $today->yesterday())->where('role', 'driver')->count();
+        $driverIncreasePercentage = $driversYesterday > 0 ? (($driversToday - $driversYesterday) / $driversYesterday) * 100 : 0;
+
+        // إرجاع البيانات في الاستجابة
+        return response()->json([
+            'orders_last_week' => $ordersLastWeek,
+            'orders_per_month' => $ordersPerMonth,
+            'active_user_percentage' => $activeUserPercentage,
+            'inactive_user_percentage' => $inactiveUserPercentage,
+            'orders_today' => $ordersToday,
+            'order_increase_percentage' => $orderIncreasePercentage,
+            'users_today' => $usersToday,
+            'user_increase_percentage' => $userIncreasePercentage,
+            'products_today' => $productsToday,
+            'product_increase_percentage' => $productIncreasePercentage,
+            'drivers_today' => $driversToday,
+            'driver_increase_percentage' => $driverIncreasePercentage,
+        ]);
     }
 }

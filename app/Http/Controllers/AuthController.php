@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\UserResource;
 
 class AuthController extends Controller
 {
@@ -110,7 +111,7 @@ class AuthController extends Controller
             'status' => true,
             'message' => 'OTP verified successfully.',
             'data' => [
-                'user' => $user,
+                'user' => new UserResource($user),
                 'token' => $token,
             ]
         ]);
@@ -139,7 +140,7 @@ class AuthController extends Controller
         }
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json(['message' => 'Login successful', 'token' => $token, 'user' => $user]);
+        return response()->json(['message' => 'Login successful', 'token' => $token,'user' => new UserResource($user),]);
     }
 
     /**
@@ -183,8 +184,8 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'user' => $user
-        ]);
+            'user' => new UserResource($user),
+                ]);
     }
 
 
@@ -308,5 +309,15 @@ class AuthController extends Controller
         ]);
     }
 
+    public function show()
+    {
+        $user = Auth::user();
+        $user = User::where('user_id', $user->id)->findOrFail();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $user,
+        ], 200);
+    }
 
 }

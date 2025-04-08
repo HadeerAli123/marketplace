@@ -34,6 +34,7 @@ Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
             Route::get('customer/dashboard', function () {
                 return response()->json(['message' => 'Welcome customer']);
             });
+            Route::get('get-profile', [AuthController::class, 'show']);
         });
 
         Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
