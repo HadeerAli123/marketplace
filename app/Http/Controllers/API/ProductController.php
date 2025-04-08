@@ -214,28 +214,24 @@ public function index()
 {
     try {
         $validator = Validator::make($request->all(), [
-            'product_name' => 'required|string|max:255',
+            'product_name' => 'nullable|string|max:255',
             'cover_image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
-            'price' => 'required|numeric',
+            'price' => 'nullable|numeric',
             'description' => 'nullable|string',
             'images' => 'nullable|array',
             'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
-            'stock' => 'required|integer',
-            'category_id' => 'required|integer|exists:categories,id',
+            'stock' => 'nullable|integer',
+            'category_id' => 'nullable|integer|exists:categories,id',
         ], [
-            'product_name.required' => 'Product name is required.',
             'product_name.string' => 'Product name must be a string.',
             'product_name.max' => 'Product name may not be greater than 255 characters.',
-            'price.required' => 'Price is required.',
             'price.numeric' => 'Price must be a number.',
             'description.string' => 'Description must be a string.',
             'images.file' => 'Image must be a file.',
             'images.image' => 'The file must be an image.',
             'images.mimes' => 'Image must be of type: jpeg, png, jpg, or gif.',
             'images.max' => 'Image may not be greater than 2 MB.',
-            'stock.required' => 'Stock is required.',
             'stock.integer' => 'Stock must be an integer.',
-            'category_id.required' => 'Category ID is required.',
             'category_id.integer' => 'Category ID must be an integer.',
             'category_id.exists' => 'Category ID does not exist.',
         ]);
