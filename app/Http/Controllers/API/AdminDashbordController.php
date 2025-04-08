@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Category;
 use App\Models\Delivery;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\UsersAddress;
 use Carbon\Carbon;
@@ -133,11 +134,28 @@ class AdminDashbordController extends Controller
 
     public function deleteCategory($id)
     {
-        $category = Category::findOrFail($id);
-        $category->delete();
+        try {
+            $category = Category::find($id);
 
-        return response()->json(['message' => 'Category deleted successfully']);
+            if (!$category) {
+                return response()->json(['message' => 'Category not found.'], 404);
+            }
+
+            $hasProducts = Product::where('category_id', $id)->exists();
+
+            if ($hasProducts) {
+                return response()->json(['message' => 'Cannot delete category. It has associated products.'], 400);
+            }
+
+            $category->delete();
+
+            return response()->json(['message' => 'Category deleted successfully.'], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
+
 
 
     public function getDailySummaries()
@@ -175,7 +193,7 @@ class AdminDashbordController extends Controller
 
     public function getDailyCustomerSummaries()
     {
-        $today = Carbon::today()->toDateString(); // تحديد تاريخ اليوم
+        $today = Carbon::today()->toDateString();
 
         $summaries = Order::with(['user', 'items.product'])
             ->whereDate('created_at', $today)

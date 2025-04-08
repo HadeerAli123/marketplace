@@ -52,7 +52,27 @@ class AuthController extends Controller
             'image' => $imagePath,
             'status' => 'inactive',
         ]);
-
+        $user->addresses()->createMany([
+            [
+                'country' => 'السعودية',
+                'state' => null,
+                'zip_code' => null,
+                'city' => 'الرياض',
+                'address' => 'عنوان الفاتورة الافتراضي',
+                'type' => 'billing',
+                'company_name' => null,
+            ],
+            [
+                'country' => 'السعودية',
+                'state' => null,
+                'zip_code' => null,
+                'city' => 'الرياض',
+                'address' => 'عنوان الشحن الافتراضي',
+                'type' => 'shipping',
+                'company_name' => null,
+            ],
+        ]);
+        
         Cache::put('otp_' . $user->phone, $otp, now()->addMinutes(10));
 
         // // Send OTP via email
@@ -311,12 +331,11 @@ class AuthController extends Controller
 
     public function show()
     {
-        $user = Auth::user();
-        $user = User::where('user_id', $user->id)->findOrFail();
+        $user = Auth::user(); // This will return the authenticated user instance directly
 
         return response()->json([
             'status' => 'success',
-            'data' => $user,
+            'user' => new UserResource($user),
         ], 200);
     }
 

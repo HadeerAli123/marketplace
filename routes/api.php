@@ -30,12 +30,21 @@ Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('edit-profile', [AuthController::class, 'editProfile']);
 
-        Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
-            Route::get('customer/dashboard', function () {
-                return response()->json(['message' => 'Welcome customer']);
-            });
-            Route::get('get-profile', [AuthController::class, 'show']);
-        });
+      // For Customers
+    Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
+        Route::get('customer/get-profile', [AuthController::class, 'show']);
+    });
+
+    // For Drivers
+    Route::middleware(['auth:sanctum', DriverMiddleware::class])->group(function () {
+        Route::get('driver/get-profile', [AuthController::class, 'show']);
+    });
+
+    // For Admins
+    Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
+        Route::get('admin/get-profile', [AuthController::class, 'show']);
+    });
+
 
         Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
             Route::get('/driver/dashboard', fn() => response()->json(['message' => 'Welcome Driver']));
@@ -128,7 +137,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
     });
 Route::post('contact-messages', [ContactUsController::class, 'store']);
 
-Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('user-addresses', UserAddressesController::class);
 });
 
