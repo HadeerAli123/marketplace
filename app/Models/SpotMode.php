@@ -15,16 +15,14 @@ class SpotMode extends Model
 
 
     protected $table = 'spot_mode';
-
-public  static function  isActive(){
-    $now=now();
-    $currentTime=$now->toTimeString();
-    $currentDate=$now->toDateString();
-     return self::where('status','activat') //بتعمل استعلام على جدول spot_mode بشروط:
-     ->whereDate('created_at', $currentDate)
-     ->where('activate_time', '<=', $currentTime)
-     ->where('closing_time', '>=', $currentTime)->exists();
-}
+    public static function isActive()
+    {
+        $now = now(); // يحتوي على التاريخ والوقت (مثل "2025-04-06 11:15:00")
+        return self::where('status', 'active')
+            ->where('activate_time', '<=', $now)
+            ->where('closing_time', '>=', $now)
+            ->exists();
+    }
     public function user()
     {
         return $this->belongsTo(User::class);
