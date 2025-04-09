@@ -216,98 +216,117 @@ public function productDetails($id)
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    public function update(Request $request, $id)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'product_name' => 'nullable|string|max:255',
-                'cover_image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
-                'price' => 'nullable|numeric',
-                'description' => 'nullable|string',
-                'images' => 'nullable|array',
-                'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
-                'stock' => 'nullable|integer',
-                'category_id' => 'nullable|integer|exists:categories,id',
-            ], [
-                // الرسايل زي ما هي
-            ]);
-    
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
-    
-            $data = $validator->validated();
-    
-            $product = Product::find($id);
-            if (!$product) {
-                return response()->json(['error' => 'Product not found'], 404);
-            }
-    
-            if ($product->user_id != Auth::id()) {
-                return response()->json(['error' => 'Unauthorized: You can only update your own products.'], 403);
-            }
-    
-            if (isset($data['category_id'])) {
-                $category = Category::find($data['category_id']);
-                if (!$category) {
-                    return response()->json(['error' => 'Invalid category ID'], 404);
-                }
-                $product->category_id = $data['category_id'];
-            }
-    
-            if (isset($data['product_name'])) {
-                $product->product_name = $data['product_name'];
-            }
-            if (isset($data['price'])) {
-                $product->price = $data['price'];
-            }
-            if (isset($data['description'])) {
-                $product->description = $data['description'];
-            }
-            if (isset($data['stock'])) {
-                $product->stock = $data['stock'];
-            }
-    
-            if ($request->hasFile('cover_image')) {
-                if ($product->cover_image) {
-                    // المسار النسبي مخزن أصلاً، فنستخدمه مباشرة
-                    if (Storage::disk('products')->exists($product->cover_image)) {
-                        Storage::disk('products')->delete($product->cover_image);
-                    }
-                }
-                $path = $request->file('cover_image')->store('cover_images', 'products');
-                $product->cover_image = $path; // المسار النسبي
-            }
-    
-            if ($request->hasFile('images')) {
-                $existingImages = ProductImage::where('product_id', $id)->get();
-                foreach ($existingImages as $image) {
-                    if (Storage::disk('products')->exists($image->image)) {
-                        Storage::disk('products')->delete($image->image);
-                    }
-                    $image->delete();
-                }
-    
-                foreach ($request->file('images') as $image) {
-                    $path = $image->store('images', 'products');
-                    ProductImage::create([
-                        'product_id' => $id,
-                        'image' => $path,
-                    ]);
-                }
-            }
-    
-            $product->save();
-    
-            return response()->json([
-                'message' => 'Product updated successfully',
-                'data' => new ProductResource($product->load('images', 'category')),
-            ], 200);
-        } catch (\Exception $e) {
-            \Log::error('Product update failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to update product: ' . $e->getMessage()], 500);
+  public function update(Request $request, $id)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'product_name' => 'nullable|string|max:255',
+            'cover_image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
+            'price' => 'nullable|numeric',
+            'description' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
+            'stock' => 'nullable|integer',
+            'category_id' => 'nullable|integer|exists:categories,id',
+        ], [
+            'product_name.string' => 'Product name must be a string.',
+            'product_name.max' => 'Product name may not be greater than 255 characters.',
+            'price.numeric' => 'Price must be a number.',
+            'description.string' => 'Description must be a string.',
+            'images.file' => 'Image must be a file.',
+            'images.image' => 'The file must be an image.',
+            'images.mimes' => 'Image must be of type: jpeg, png, jpg, or gif.',
+            'images.max' => 'Image may not be greater than 2 MB.',
+            'stock.integer' => 'Stock must be an integer.',
+            'category_id.integer' => 'Category ID must be an integer.',
+            'category_id.exists' => 'Category ID does not exist.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
         }
+
+        $data = $validator->validated();
+
+        $product = Product::find($id);
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        if ($product->user_id != Auth::id()) {
+            return response()->json(['error' => 'Unauthorized: You can only update your own products.'], 403);
+        }
+
+        if (isset($data['category_id'])) {
+            $category = Category::find($data['category_id']);
+            if (!$category) {
+                return response()->json(['error' => 'Invalid category ID'], 404);
+            }
+            $product->category_id = $data['category_id'];
+        }
+
+        if (isset($data['product_name'])) {
+            $product->product_name = $data['product_name'];
+        }
+        if (isset($data['price'])) {
+            $product->price = $data['price'];
+        }
+        if (isset($data['description'])) {
+            $product->description = $data['description'];
+        }
+        if (isset($data['stock'])) {
+            $product->stock = $data['stock'];
+        }
+
+        if ($request->hasFile('cover_image')) {
+            if ($product->cover_image) {
+                if (Storage::disk('products')->exists($product->cover_image)) {
+                    Storage::disk('products')->delete($product->cover_image);
+                }
+            }
+            $path = $request->file('cover_image')->store('cover_images', 'products');
+            $product->cover_image = $path;
+        }
+
+        if ($request->hasFile('images')) {
+            $existingImages = ProductImage::where('product_id', $id)->get();
+            foreach ($existingImages as $image) {
+                if (Storage::disk('products')->exists($image->image)) {
+                    Storage::disk('products')->delete($image->image);
+                }
+                $image->delete();
+            }
+
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('images', 'products');
+                ProductImage::create([
+                    'product_id' => $id,
+                    'image' => $path,
+                ]);
+            }
+        }
+
+        $product->save();
+
+        // الـ Response بدون استخدام ProductResource، عشان نرجّع الـ price الفعلي دايمًا
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'data' => [
+                'id' => $product->id,
+                'product_name' => $product->product_name,
+                'price' => $product->price, // الـ price الفعلي دايمًا
+                'description' => $product->description,
+                'stock' => $product->stock,
+                'cover_image' => asset('uploads/products/' . $product->cover_image),
+                'category' => new CategoryResource($product->category),
+                'images' => ProductImageResource::collection($product->images),
+            ],
+        ], 200);
+    } catch (\Exception $e) {
+        \Log::error('Product update failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update product: ' . $e->getMessage()], 500);
     }
+}
 
         public function destroy(Product $product)
         {
