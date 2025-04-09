@@ -16,17 +16,45 @@ use Illuminate\Http\Request;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\Validator;
 
+
 class AdminDashbordController extends Controller
 {
+  
     public function getDrivers()
     {
         $drivers = User::where('role', 'driver')->get();
-
-        return response()->json([
-            'message' => 'Drivers retrieved successfully',
-            'drivers' => $drivers
-        ], 200);
+    
+        $result = [];
+    
+        foreach ($drivers as $driver) {
+            $deliveries = $driver->deliveries()
+                ->where('status', 'delivered')
+                ->with('order.orderItems')
+                ->get();
+    
+            $totalCollected = 0;
+    
+            foreach ($deliveries as $delivery) {
+                if ($delivery->order && $delivery->order->orderItems) {
+                    foreach ($delivery->order->orderItems as $item) {
+                        $totalCollected += $item->price * $item->quantity;
+                    }
+                }
+            }
+    
+            $result[] = [
+                'id' => $driver->id,
+                'full_name' => trim($driver->first_name . ' ' . $driver->last_name),
+                'phone' => $driver->phone,
+                'status' => $driver->status,
+                'total_collected' => $totalCollected,
+                'deliveries_count' => $deliveries->count(),
+            ];
+        }
+    
+        return response()->json($result);
     }
+    
 
     public function getOrders(Request $request)
     {
@@ -228,23 +256,25 @@ class AdminDashbordController extends Controller
 
     public function addDriver(Request $request)
     {
-        // Validate the request data
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'username' => 'required|unique:users,username',
+            'username' => 'nullable|unique:users,username',
             'phone' => 'required|string',
             'password' => 'required|string|min:8',
-            'address.country' => 'required|string',
-            'address.city' => 'required|string',
-            'address.address' => 'required|string',
+            'address.country' => 'nullable|string',
+            'address.city' => 'nullable|string',
+            'address.address' => 'required|string', 
+            'address.state' => 'nullable|string',
+            'address.zip_code' => 'nullable|string',
+            'address.type' => 'nullable|in:billing,shipping',
+            'address.company_name' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Create the user with the role "driver"
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
@@ -254,7 +284,6 @@ class AdminDashbordController extends Controller
             'password' => bcrypt($request->password),
         ]);
 
-        // Create the user's address
         $address = new UsersAddress([
             'country' => $request->address['country'],
             'state' => $request->address['state'] ?? null,
@@ -265,68 +294,117 @@ class AdminDashbordController extends Controller
             'company_name' => $request->address['company_name'] ?? null
         ]);
 
-        // Save the address and associate it with the user
         $user->addresses()->save($address);
 
-        // return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
         return new UserResource($user);
     }
 
+
+    public function addcustomer(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'username' => 'nullable|unique:users,username',
+            'phone' => 'required|string',
+            'password' => 'required|string|min:8',
+            'address.country' => 'nullable|string',
+            'address.city' => 'nullable|string',
+            'address.address' => 'required|string', 
+            'address.state' => 'nullable|string',
+            'address.zip_code' => 'nullable|string',
+            'address.type' => 'nullable|in:billing,shipping',
+            'address.company_name' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        
+        $user = User::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'username' => $request->username,
+            'role' => 'customer',
+            'phone' => $request->phone,
+            'password' => bcrypt($request->password),
+        ]);
+
+        $address = new UsersAddress([
+            'country' => $request->address['country'],
+            'state' => $request->address['state'] ?? null,
+            'zip_code' => $request->address['zip_code'] ?? null,
+            'city' => $request->address['city'],
+            'address' => $request->address['address'],
+            'type' => $request->address['type'] ?? 'billing',
+            'company_name' => $request->address['company_name'] ?? null
+        ]);
+
+        $user->addresses()->save($address);
+
+        return new UserResource($user);
+    }
 
     public function getStats()
     {
         $today = Carbon::today();
         $lastWeekStart = Carbon::now()->subWeek()->startOfWeek();
         $lastWeekEnd = Carbon::now()->subWeek()->endOfWeek();
-
+    
         $ordersLastWeek = Order::whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
             ->selectRaw('DAYOFWEEK(created_at) as day_of_week, COUNT(*) as total_orders')
             ->groupBy('day_of_week')
             ->orderBy('day_of_week')
             ->get();
-
-        $ordersPerMonth = Order::selectRaw('MONTH(created_at) as month, SUM(total_amount) as total_amount')
+    
+        $ordersPerMonth = Order::selectRaw('MONTH(created_at) as month')
+            ->with(['orderItems'])
             ->whereYear('created_at', $today->year)
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
-
+            ->get()
+            ->map(function ($order) {
+             
+                if ($order->orderItems->isEmpty()) {
+                    return null;
+                }
+    
+                $totalAmount = $order->orderItems->reduce(function ($carry, $item) {
+                    return $carry + ($item->price * $item->quantity); 
+                }, 0);
+    
+                return [
+                    'month' => $order->created_at->month,
+                    'total_amount' => $totalAmount,
+                ];
+            })->filter(); 
+    
         $activeUsersCount = User::where('status', 'active')->count();
         $inactiveUsersCount = User::where('status', 'inactive')->count();
-
+    
         $totalUsersCount = $activeUsersCount + $inactiveUsersCount;
         $activeUserPercentage = $totalUsersCount > 0 ? ($activeUsersCount / $totalUsersCount) * 100 : 0;
         $inactiveUserPercentage = $totalUsersCount > 0 ? ($inactiveUsersCount / $totalUsersCount) * 100 : 0;
-
-        // 4. عدد الطلبات اليوم
+    
         $ordersToday = Order::whereDate('created_at', $today)->count();
-
-        // 5. نسبة الزيادة في الطلبات اليوم مقارنة بالأمس
+    
         $ordersYesterday = Order::whereDate('created_at', $today->yesterday())->count();
         $orderIncreasePercentage = $ordersYesterday > 0 ? (($ordersToday - $ordersYesterday) / $ordersYesterday) * 100 : 0;
-
-        // 6. عدد المستخدمين اليوم
+    
         $usersToday = User::whereDate('created_at', $today)->count();
-
-        // 7. نسبة الزيادة في المستخدمين اليوم مقارنة بالأمس
+    
         $usersYesterday = User::whereDate('created_at', $today->yesterday())->count();
         $userIncreasePercentage = $usersYesterday > 0 ? (($usersToday - $usersYesterday) / $usersYesterday) * 100 : 0;
-
-        // 8. عدد المنتجات اليوم
-        $productsToday = Order::whereDate('created_at', $today)->sum('products_count');
-
-        // 9. نسبة الزيادة في المنتجات اليوم مقارنة بالأمس
-        $productsYesterday = Order::whereDate('created_at', $today->yesterday())->sum('products_count');
+    
+        $productsToday = Order::whereDate('created_at', $today)->count();
+    
+        $productsYesterday = Order::whereDate('created_at', $today->yesterday())->count();
         $productIncreasePercentage = $productsYesterday > 0 ? (($productsToday - $productsYesterday) / $productsYesterday) * 100 : 0;
-
-        // 10. عدد السائقين اليوم
+    
         $driversToday = User::whereDate('created_at', $today)->where('role', 'driver')->count();
-
-        // 11. نسبة الزيادة في السائقين اليوم مقارنة بالأمس
+    
         $driversYesterday = User::whereDate('created_at', $today->yesterday())->where('role', 'driver')->count();
         $driverIncreasePercentage = $driversYesterday > 0 ? (($driversToday - $driversYesterday) / $driversYesterday) * 100 : 0;
-
-        // إرجاع البيانات في الاستجابة
+    
         return response()->json([
             'orders_last_week' => $ordersLastWeek,
             'orders_per_month' => $ordersPerMonth,
@@ -342,4 +420,19 @@ class AdminDashbordController extends Controller
             'driver_increase_percentage' => $driverIncreasePercentage,
         ]);
     }
+    
+
+
+
+    public function destroyuser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+    
+        return response()->json([
+            'status' => 'success',
+            'message' => 'user deleted successfully',
+        ], 200);
+    }
+    
 }

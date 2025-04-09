@@ -32,8 +32,13 @@ public function items()
                     ->withPivot('quantity', 'price');
     }
     public function delivery()
-{
-    return $this->hasOne(Delivery::class);
-}
+    {
+        return $this->hasOne(Delivery::class);
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 
 }
