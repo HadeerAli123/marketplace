@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Product;
-use App\Models\User;
 use App\Models\Category;
 use App\Models\SpotMode;
 use App\Models\ProductImage;
@@ -16,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductImageResource;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\UserResource;
 
 class ProductController extends Controller
 {
