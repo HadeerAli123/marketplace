@@ -347,11 +347,29 @@ public function productDetails($id)
         return response()->json(['message' => 'done successfully.'], 200);
     }
 
-    public function getAlldeleted()
-    {
-        $products = Product::onlyTrashed()->with(['category', 'user', 'images'])->get();    
-        return ProductResource::collection($products);
-    }
+   public function getAlldeleted()
+{
+    $products = Product::onlyTrashed()->with(['category', 'user', 'images'])->get();
+
+    $productsData = $products->map(function ($product) {
+        return [
+            'id' => $product->id,
+            'product_name' => $product->product_name,
+            'price' => $product->price,
+            'description' => $product->description,
+            'stock' => $product->stock,
+            'cover_image' => asset('uploads/products/' . $product->cover_image),
+            'category' => new CategoryResource($product->category),
+            'user' => $product->user ? new UserResource($product->user) : null,
+            'images' => ProductImageResource::collection($product->images),
+        ];
+    });
+
+    return response()->json([
+        'message' => 'Deleted products retrieved successfully',
+        'data' => $productsData,
+    ], 200);
+}
 
     public function forceDestroy($id)
     {
