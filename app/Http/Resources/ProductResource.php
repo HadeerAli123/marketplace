@@ -22,7 +22,7 @@ class ProductResource extends JsonResource
 
             'description' => $this->description,
             'stock' => $this->stock,
-            'cover_image' => $this->cover_image,
+           'image' => asset('uploads/products/' . $this->image),
             'category' => new CategoryResource($this->whenLoaded('category')),
             'user' => new UserResource($this->whenLoaded('user')),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
