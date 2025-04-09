@@ -14,6 +14,7 @@ use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\OrderItemsController;
 use App\Http\Controllers\API\ContactUsController;
 use App\Http\Controllers\API\UserAddressesController;
+use App\Http\Controllers\API\SpotModeController;
 use App\Http\Controllers\AuthController;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -94,15 +95,17 @@ Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
     Route::delete('products/{id}/force-delete', [ProductController::class, 'forceDestroy']);
 });
 
-Route::apiResource('products', ProductController::class)->only(['index', 'show']);
-Route::get('products/byCategory/{category}', [ProductController::class, 'getProductsByCategory']);
+Route::apiResource('products', ProductController::class)->only([ 'index','show']);
 Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
     Route::get('/products/details/{id}', [ProductController::class, 'productDetails']);
+    Route::get('/products/byCategory/{categoryId}', [ProductController::class, 'getProductsByCategory']);
 });
+
 
     Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::post('/orders', [OrderController::class, 'createOrder']);
+        Route::post('/confirm-cart', [OrderController::class, 'confirmawaitCart']);
         Route::put('/orders/{orderId}', [OrderController::class, 'updateOrder']);
         Route::post('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
         Route::delete('/orders/{orderId}', [OrderController::class, 'cancelOrder']);
@@ -114,7 +117,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
       
       Route::post('/cart', [CartController::class, 'store']);
       Route::get('/cart', [CartController::class, 'index']);
-        Route::put('/cart/{id}', [CartController::class, 'update']);
+      Route::post('/cart/cancel', [CartController::class, 'cancelCart']);
         Route::delete('/cart/{id}', [CartController::class, 'destroy']);
       Route::post('/cart-items', [CartItemsController::class, 'store']);
         Route::put('/cart-items/{id}', [CartItemsController::class, 'update']);
@@ -137,12 +140,18 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
     Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('contact-messages', ContactUsController::class)->only(['index', 'destroy']);
     });
+
 Route::post('contact-messages', [ContactUsController::class, 'store']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('user-addresses', UserAddressesController::class);
 });
 
+Route::middleware(['auth:sanctum',  AdminMiddleware::class])->group(function () {
+    Route::post('spot-mode/activate', [SpotModeController::class, 'activate']);
+    Route::post('spot-mode/deactivate', [SpotModeController::class, 'deactivate']);
+});
+Route::get('spot-mode/status', [SpotModeController::class, 'getStatus']);
 
 
 

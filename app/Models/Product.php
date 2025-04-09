@@ -18,6 +18,7 @@ class Product extends Model
         'stock',
         'user_id',
         'category_id',
+        'is_on_sale',
     ];
 
     protected $dates = ['deleted_at'];

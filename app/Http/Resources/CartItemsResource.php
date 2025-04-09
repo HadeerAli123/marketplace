@@ -2,26 +2,30 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
+use App\Models\SpotMode;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CartItemsResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(Request $request): array
+    public function toArray($request)
     {
+        $product = $this->product;
+        $isSpotModeActive = SpotMode::isActive();
+
+        $price = $isSpotModeActive ? $product->price : 'Price to be confirmed later';
+
         return [
             'id' => $this->id,
+            'cart_id' => $this->cart_id,
             'product_id' => $this->product_id,
-            'product_name' => $this->product->product_name,
             'quantity' => $this->quantity,
-            'price' => $this->price,
-            'total' => $this->quantity * $this->price,
-            'cover_image' => $this->product->cover_image,
+            'price' => $price,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'product' => [
+                'id' => $product->id,
+                'product_name' => $product->product_name,
+            ],
         ];
     }
 }
