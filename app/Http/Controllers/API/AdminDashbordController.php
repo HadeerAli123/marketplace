@@ -58,27 +58,28 @@ class AdminDashbordController extends Controller
 
     public function getOrders(Request $request)
     {
-        $query = Order::with(['user', 'products', 'delivery']);
-
+        $query = Order::with(['user', 'products', 'delivery.driver']); 
+    
         if ($request->has('order_id')) {
             $query->where('id', $request->order_id);
         }
-
+    
         if ($request->has('last_status')) {
             $query->where('last_status', $request->last_status);
         }
-
+    
         if ($request->has('date')) {
             $query->whereDate('date', $request->date);
         }
-
+    
         $orders = $query->orderBy('date', 'desc')->get();
-
+    
         return response()->json([
             'message' => 'Orders retrieved successfully',
             'orders' => $orders
         ], 200);
     }
+    
 
     public function getCategories()
     {
