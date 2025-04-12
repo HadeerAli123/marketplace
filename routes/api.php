@@ -80,17 +80,16 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/products/deleted',
-    [ProductController::class, 'getAlldeleted'])
-    ->middleware('auth:sanctum');
-Route::get('/products/restore/{product_id}',
-    [ProductController::class, 'restore'])
-    ->middleware('auth:sanctum');
+
 Route::apiResource('orders', OrderController::class)->middleware('auth:sanctum');
 Route::apiResource('order-items', OrderItemsController::class);
+
+// products
 Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
     Route::apiResource('products', ProductController::class)->only(['store', 'update', 'destroy']);
     Route::delete('products/{id}/force-delete', [ProductController::class, 'forceDestroy']);
+    Route::get('/products/deleted', [ProductController::class, 'getAlldeleted']);
+    Route::get('/products/restore/{product_id}',[ProductController::class, 'restore']);
 });
 
 Route::apiResource('products', ProductController::class)->only([ 'index','show']);
@@ -99,20 +98,22 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
     Route::get('/products/byCategory/{categoryId}', [ProductController::class, 'getProductsByCategory']);
 });
 
-
+// order 
     Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::post('/orders', [OrderController::class, 'createOrder']);
         Route::post('/confirm-cart', [OrderController::class, 'confirmawaitCart']);
-        Route::put('/orders/{orderId}', [OrderController::class, 'updateOrder']);
-        Route::post('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
-        Route::delete('/orders/{orderId}', [OrderController::class, 'cancelOrder']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::get('/orders/status/{status}', [OrderController::class, 'getOrdersByStatus']);
+
+        // Route::put('/orders/{orderId}', [OrderController::class, 'updateOrder']);
+        // Route::post('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
+        // Route::delete('/orders/{orderId}', [OrderController::class, 'cancelOrder']);
     });
 
+    // cart
   Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
    
-      
       Route::post('/cart', [CartController::class, 'store']);
       Route::get('/cart', [CartController::class, 'index']);
       Route::post('/cart/cancel', [CartController::class, 'cancelCart']);
@@ -124,16 +125,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
       
     });
 
-    Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
-        Route::get('/driver/orders', [OrderController::class, 'getDriverOrders']);
-        Route::post('/orders/{orderId}/accept', [OrderController::class, 'acceptOrder']);
-        Route::post('/orders/{orderId}/deliver', [OrderController::class, 'deliverOrder']);
-    });
-    
-    Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
-        Route::get('/admin/orders', [OrderController::class, 'adminOrderDetails']);
-        Route::post('/orders/assign', [OrderController::class, 'assignOrdersToDriver']);
-    });
+  // contact
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('contact-messages', ContactUsController::class)->only(['index', 'destroy']);
@@ -141,12 +133,14 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
 
 Route::post('contact-messages', [ContactUsController::class, 'store']);
 
-Route::middleware(['auth:sanctum'])->group(function () {
+/// user address
+Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
     Route::apiResource('user-addresses', UserAddressesController::class);
     Route::get('/addresses/billing', [UserAddressesController::class, 'getBillingAddress'])->name('addresses.billing');
 Route::get('/addresses/shipping', [UserAddressesController::class, 'getShippingAddress'])->name('addresses.shipping');
 });
 
+///spot mode 
 Route::middleware(['auth:sanctum',  AdminMiddleware::class])->group(function () {
     Route::post('spot-mode/activate', [SpotModeController::class, 'activate']);
     Route::post('spot-mode/deactivate', [SpotModeController::class, 'deactivate']);
@@ -156,7 +150,16 @@ Route::get('spot-mode/status', [SpotModeController::class, 'getStatus']);
 
 
 
+// Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
+//     Route::get('/driver/orders', [OrderController::class, 'getDriverOrders']);
+//     Route::post('/orders/{orderId}/accept', [OrderController::class, 'acceptOrder']);
+//     Route::post('/orders/{orderId}/deliver', [OrderController::class, 'deliverOrder']);
+// });
 
+// Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
+//     Route::get('/admin/orders', [OrderController::class, 'adminOrderDetails']);
+//     Route::post('/orders/assign', [OrderController::class, 'assignOrdersToDriver']);
+// });
 
 
 
