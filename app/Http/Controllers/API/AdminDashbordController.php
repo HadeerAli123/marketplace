@@ -258,14 +258,14 @@ class AdminDashbordController extends Controller
     public function addDriver(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
+            'first_name' => 'nullable|string',
+            'last_name' => 'nullable|string',
             'username' => 'nullable|unique:users,username',
             'phone' => 'required|string',
             'password' => 'required|string|min:8',
             'address.country' => 'nullable|string',
             'address.city' => 'nullable|string',
-            'address.address' => 'required|string', 
+            'address.address' => 'nullable|string', 
             'address.state' => 'nullable|string',
             'address.zip_code' => 'nullable|string',
             'address.type' => 'nullable|in:billing,shipping',
@@ -277,20 +277,20 @@ class AdminDashbordController extends Controller
         }
 
         $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'username' => $request->username,
+            'first_name' => $request->first_name?? null,
+            'last_name' => $request->last_name?? null,
+            'username' => $request->username?? null,
             'role' => 'driver',
             'phone' => $request->phone,
             'password' => bcrypt($request->password),
         ]);
 
         $address = new UsersAddress([
-            'country' => $request->address['country'],
+            'country' => $request->address['country']?? "country",
             'state' => $request->address['state'] ?? null,
             'zip_code' => $request->address['zip_code'] ?? null,
-            'city' => $request->address['city'],
-            'address' => $request->address['address'],
+            'city' => $request->address['city']?? "city",
+            'address' => $request->address['address']??"address",
             'type' => $request->address['type'] ?? 'billing',
             'company_name' => $request->address['company_name'] ?? null
         ]);
@@ -304,14 +304,14 @@ class AdminDashbordController extends Controller
     public function addcustomer(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
+            'first_name' => 'nullable|string',
+            'last_name' => 'nullable|string',
             'username' => 'nullable|unique:users,username',
             'phone' => 'required|string',
             'password' => 'required|string|min:8',
             'address.country' => 'nullable|string',
             'address.city' => 'nullable|string',
-            'address.address' => 'required|string', 
+            'address.address' => 'nullable|string', 
             'address.state' => 'nullable|string',
             'address.zip_code' => 'nullable|string',
             'address.type' => 'nullable|in:billing,shipping',
@@ -333,11 +333,11 @@ class AdminDashbordController extends Controller
         ]);
 
         $address = new UsersAddress([
-            'country' => $request->address['country'],
+            'country' => $request->address['country']?? "country",
             'state' => $request->address['state'] ?? null,
             'zip_code' => $request->address['zip_code'] ?? null,
-            'city' => $request->address['city'],
-            'address' => $request->address['address'],
+            'city' => $request->address['city']?? "city",
+            'address' => $request->address['address']??"address",
             'type' => $request->address['type'] ?? 'billing',
             'company_name' => $request->address['company_name'] ?? null
         ]);
