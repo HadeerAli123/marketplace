@@ -123,4 +123,45 @@ class UserAddressesController extends Controller
             'message' => 'Address deleted successfully',
         ], 200);
     }
+
+    public function getBillingAddress()
+{
+    $user = Auth::user();
+    $billingAddress = UsersAddress::where('user_id', $user->id)
+                                  ->where('type', 'billing')
+                                  ->first();
+
+    if (!$billingAddress) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Billing address not found',
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $billingAddress,
+    ], 200);
 }
+
+public function getShippingAddress()
+{
+    $user = Auth::user();
+    $shippingAddress = UsersAddress::where('user_id', $user->id)
+                                   ->where('type', 'shipping')
+                                   ->first();
+
+    if (!$shippingAddress) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Shipping address not found',
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $shippingAddress,
+    ], 200);
+}
+}
+

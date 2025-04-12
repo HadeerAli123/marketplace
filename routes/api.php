@@ -143,6 +143,8 @@ Route::post('contact-messages', [ContactUsController::class, 'store']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('user-addresses', UserAddressesController::class);
+    Route::get('/addresses/billing', [UserAddressesController::class, 'getBillingAddress'])->name('addresses.billing');
+Route::get('/addresses/shipping', [UserAddressesController::class, 'getShippingAddress'])->name('addresses.shipping');
 });
 
 Route::middleware(['auth:sanctum',  AdminMiddleware::class])->group(function () {
