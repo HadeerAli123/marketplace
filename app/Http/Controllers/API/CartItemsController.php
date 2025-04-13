@@ -19,13 +19,13 @@ class CartItemsController extends Controller
                         ->whereIn('status', ['pending', 'awaiting_price_confirmation'])
                         ->with('items.product')
                         ->first();
-
+    
             if (!$cart || $cart->items->isEmpty()) {
                 return response()->json(['message' => 'No items found in your cart'], 200);
             }
-
+    
             $isSpotModeActive = SpotMode::isActive();
-
+    
             $cartItems = $cart->items->map(function ($item) use ($isSpotModeActive) {
                 $price = $isSpotModeActive ? $item->product->price : null;
                 return [
@@ -36,14 +36,19 @@ class CartItemsController extends Controller
                     'quantity' => $item->quantity,
                     'price' => $price ?? 'Price to be confirmed later',
                     'total' => $price ? ($price * $item->quantity) : null,
+                    'cover_image' => $item->product->cover_image ?? 'No image available', 
                 ];
             });
-
-            return response()->json($cartItems, 200);
+    
+            return response()->json([
+                'message' => 'Cart items retrieved successfully',
+                'data' => $cartItems,
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
 
     public function store(Request $request)
     {
