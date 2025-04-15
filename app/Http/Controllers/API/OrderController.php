@@ -589,8 +589,8 @@ public function confirmawaitCart(Request $request)
     // }
 
    
-
     // public function getDriverOrders()
+
     // {
     //     $driverId = auth()->id();
 
@@ -668,5 +668,78 @@ public function confirmawaitCart(Request $request)
             'status' => 'success',
             'order' => $orderDetails,
         ], 200);
+    }
+    public function getOrdersByStatus(Request $request, $status)
+    {
+        try {
+            $statusMap = [
+                'to-receive' => 'shipped',
+                'completed' => 'delivered',
+                'cancelled' => 'canceled',
+            ];
+    
+            if (!array_key_exists($status, $statusMap)) {
+                return response()->json(['error' => 'Invalid status'], 400);
+            }
+    
+            $mappedStatus = $statusMap[$status];
+    
+            $orders = Order::where('user_id', Auth::id())
+                           ->where('last_status', $mappedStatus)
+                           ->with(['items.product', 'delivery'])
+                           ->get();
+    
+            return response()->json([
+                'message' => ucfirst($status) . ' orders retrieved successfully',
+                'data' => $orders->map(function ($order) {
+                    $estimatedArrival = $this->calculateEstimatedArrival($order);
+    
+                  
+                    $totalPrice = $order->items->sum(function ($item) {
+                        return $item->quantity * ($item->price ?? $item->product->price);
+                    });
+    
+                    return [
+                        'order_number' => $order->id,
+                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
+                        'created_at' => $order->created_at->format('d/m/Y h:i A'),
+                        'estimated_arrival' => $estimatedArrival,
+                        'status' => $order->last_status,
+                    ];
+                }),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    private function calculateEstimatedArrival($order)
+    {
+        if ($order->last_status === 'canceled') {
+            return 'Pick up was unsuccessful';
+        }
+    
+        if ($order->last_status === 'delivered') {
+            if ($order->delivery && $order->delivery->delivery_time) {
+                return 'Delivered on ' . $order->delivery->delivery_time->format('d/m/Y h:i A');
+            }
+            return 'Delivered';
+        }
+    
+        if ($order->last_status === 'shipped') {
+            $baseDeliveryTime = 40;
+            $createdAt = $order->created_at;
+            $estimatedDeliveryTime = $createdAt->copy()->addMinutes($baseDeliveryTime);
+            $now = now();
+    
+            if ($now->lessThan($estimatedDeliveryTime)) {
+                $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
+                return "Arriving in $remainingMinutes min";
+            }
+    
+            return 'Delayed';
+        }
+    
+        return 'Unknown status';
     }
 }

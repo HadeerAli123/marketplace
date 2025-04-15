@@ -136,7 +136,31 @@ public function productDetails($id)
                 'stock' => 'required|integer',
                 'category_id' => 'required|integer|exists:categories,id',
             ], [
-                // الرسايل زي ما هي
+                'product_name.required' => 'Product name is required.',
+                'product_name.string' => 'Product name must be a string.',
+                'product_name.max' => 'Product name may not be greater than 255 characters.',
+                'product_name.unique' => 'A product with this name already exists.',
+                'cover_image.required' => 'Cover image is required.',
+                'cover_image.file' => 'Cover image must be a file.',
+                'cover_image.image' => 'Cover image must be an image.',
+                'cover_image.mimes' => 'Cover image must be of type: jpeg, png, jpg, gif, webp, or avif.',
+                'cover_image.max' => 'Cover image may not be greater than 2 MB.',
+                'price.required' => 'Price is required.',
+                'price.numeric' => 'Price must be a number.',
+                'price.min' => 'Price cannot be negative.',
+                'description.string' => 'Description must be a string.',
+                'images.array' => 'Images must be an array.',
+                'images.max' => 'You cannot upload more than 5 images.',
+                'images.*.file' => 'Each image must be a file.',
+                'images.*.image' => 'Each file must be an image.',
+                'images.*.mimes' => 'Each image must be of type: jpeg, png, jpg, gif, webp, or avif.',
+                'images.*.max' => 'Each image may not be greater than 2 MB.',
+                'stock.required' => 'Stock is required.',
+                'stock.integer' => 'Stock must be an integer.',
+                'stock.min' => 'Stock cannot be negative.',
+                'category_id.required' => 'Category ID is required.',
+                'category_id.integer' => 'Category ID must be an integer.',
+                'category_id.exists' => 'Category ID does not exist.',
             ]);
     
             if ($validator->fails()) {
@@ -158,7 +182,7 @@ public function productDetails($id)
             $image_path = '';
             if ($request->hasFile('cover_image')) {
                 $image_path = $request->file('cover_image')->store('cover_images', 'products');
-                // هنخزن المسار النسبي فقط
+               
             }
     
             $product = new Product();
@@ -166,7 +190,7 @@ public function productDetails($id)
             $product->price = $data['price'];
             $product->description = $data['description'] ?? $product->description;
             $product->stock = $data['stock'];
-            $product->cover_image = $image_path; // المسار النسبي (مثل 'cover_images/image.jpg')
+            $product->cover_image = $image_path; 
             $product->user_id = Auth::id();
             $product->category_id = $data['category_id'];
             $product->save();
@@ -176,7 +200,7 @@ public function productDetails($id)
                     $path = $image->store('images', 'products');
                     $productImage = new ProductImage();
                     $productImage->product_id = $product->id;
-                    $productImage->image = $path; // المسار النسبي هنا كمان
+                    $productImage->image = $path; 
                     $productImage->save();
                 }
             }
@@ -309,13 +333,13 @@ public function productDetails($id)
 
         $product->save();
 
-        // الـ Response بدون استخدام ProductResource، عشان نرجّع الـ price الفعلي دايمًا
+        
         return response()->json([
             'message' => 'Product updated successfully',
             'data' => [
                 'id' => $product->id,
                 'product_name' => $product->product_name,
-                'price' => $product->price, // الـ price الفعلي دايمًا
+                'price' => $product->price, 
                 'description' => $product->description,
                 'stock' => $product->stock,
                 'cover_image' => asset('uploads/products/' . $product->cover_image),
@@ -348,30 +372,29 @@ public function productDetails($id)
         return response()->json(['message' => 'done successfully.'], 200);
     }
 
-   public function getAlldeleted()
-{
-    $products = Product::onlyTrashed()->with(['category', 'user', 'images'])->get();
-
-    $productsData = $products->map(function ($product) {
-        return [
-            'id' => $product->id,
-            'product_name' => $product->product_name,
-            'price' => $product->price,
-            'description' => $product->description,
-            'stock' => $product->stock,
-            'cover_image' => asset('uploads/products/' . $product->cover_image),
-            'category' => new CategoryResource($product->category),
-            'user' => $product->user ? new UserResource($product->user) : null,
-            'images' => ProductImageResource::collection($product->images),
-        ];
-    });
-
-    return response()->json([
-        'message' => 'Deleted products retrieved successfully',
-        'data' => $productsData,
-    ], 200);
-}
-
+    public function getAlldeleted()
+    {
+        $products = Product::onlyTrashed()->with(['category', 'user', 'images'])->get();
+    
+        $productsData = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'product_name' => $product->product_name,
+                'price' => $product->price, 
+                'description' => $product->description,
+                'stock' => $product->stock,
+                'cover_image' => asset('uploads/products/' . $product->cover_image),
+                'category' => new CategoryResource($product->category),
+                'user' => $product->user ? new UserResource($product->user) : null,
+                'images' => ProductImageResource::collection($product->images),
+            ];
+        });
+    
+        return response()->json([
+            'message' => 'Deleted products retrieved successfully',
+            'data' => $productsData,
+        ], 200);
+    }
     public function forceDestroy($id)
     {
         $product = Product::withTrashed()->find($id);
