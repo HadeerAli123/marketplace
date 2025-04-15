@@ -68,6 +68,8 @@ Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
             Route::post('add-driver', [AdminDashbordController::class, 'addDriver']);
             Route::post('add-customer', [AdminDashbordController::class, 'addcustomer']);
             Route::get('stats', [AdminDashbordController::class, 'getStats']);
+            Route::get('allproducts', [AdminDashbordController::class, 'getProducts']);
+            Route::get('getUser/{id}', [AdminDashbordController::class, 'getUser']);
             Route::delete('destroyuser/{id}', [AdminDashbordController::class, 'destroyuser']);
 
 

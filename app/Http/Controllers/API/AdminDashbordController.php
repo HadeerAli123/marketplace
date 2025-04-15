@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\ProductResource;
 use App\Http\Resources\UserResource;
 use App\Models\Category;
 use App\Models\Delivery;
@@ -19,21 +20,21 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminDashbordController extends Controller
 {
-  
+
     public function getDrivers()
     {
         $drivers = User::where('role', 'driver')->get();
-    
+
         $result = [];
-    
+
         foreach ($drivers as $driver) {
             $deliveries = $driver->deliveries()
                 ->where('status', 'delivered')
                 ->with('order.orderItems')
                 ->get();
-    
+
             $totalCollected = 0;
-    
+
             foreach ($deliveries as $delivery) {
                 if ($delivery->order && $delivery->order->orderItems) {
                     foreach ($delivery->order->orderItems as $item) {
@@ -41,7 +42,7 @@ class AdminDashbordController extends Controller
                     }
                 }
             }
-    
+
             $result[] = [
                 'id' => $driver->id,
                 'full_name' => trim($driver->first_name . ' ' . $driver->last_name),
@@ -51,35 +52,35 @@ class AdminDashbordController extends Controller
                 'deliveries_count' => $deliveries->count(),
             ];
         }
-    
+
         return response()->json($result);
     }
-    
+
 
     public function getOrders(Request $request)
     {
-        $query = Order::with(['user', 'products', 'delivery.driver']); 
-    
+        $query = Order::with(['user', 'products', 'delivery.driver']);
+
         if ($request->has('order_id')) {
             $query->where('id', $request->order_id);
         }
-    
+
         if ($request->has('last_status')) {
             $query->where('last_status', $request->last_status);
         }
-    
+
         if ($request->has('date')) {
             $query->whereDate('date', $request->date);
         }
-    
+
         $orders = $query->orderBy('date', 'desc')->get();
-    
+
         return response()->json([
             'message' => 'Orders retrieved successfully',
             'orders' => $orders
         ], 200);
     }
-    
+
 
     public function getCategories()
     {
@@ -116,6 +117,13 @@ class AdminDashbordController extends Controller
         ]);
     }
 
+    public function getUser($id)
+    {
+        $user = User::with(['addresses'])->findOrFail($id);
+
+        return new UserResource($user);
+
+    }
 
 
     public function createCategory(Request $request)
@@ -185,6 +193,26 @@ class AdminDashbordController extends Controller
         }
     }
 
+    public function getProducts()
+    {
+        $products = Product::with('category')->get();
+
+        $formatted = $products->map(function ($product) {
+            return [
+                'price' => $product->price,
+                'category_name' => $product->category?->category_name,
+                'id' => $product->id,
+                'product_name' => $product->product_name,
+                'stock' => $product->stock,
+                'image' => $product->cover_image
+                    ?  asset('uploads/products/' . $product->cover_image)
+                    : asset('uploads/products/default.png'),
+
+            ];
+        });
+
+        return response()->json($formatted);
+    }
 
 
     public function getDailySummaries()
@@ -206,7 +234,7 @@ class AdminDashbordController extends Controller
                 })->values();
 
                 return [
-                    'driver_name' => $delivery->driver->first_name ?? 'غير معروف',
+                    'driver_name' => $delivery->driver->first_name.''. $delivery->driver->last_name?? 'غير معروف',
                     'total_orders' => $order->count(),
                     'total_price' =>  number_format($order->items->sum(fn($item) => $item->quantity * $item->price), 2),
                     'categories' => $categoriesSummary
@@ -231,7 +259,7 @@ class AdminDashbordController extends Controller
                 return $order->items->map(function ($item) use ($order) {
                     return [
                         'order_id' => $order->id,
-                        'customer_name' => $order->user->first_name ?? 'غير معروف',
+                        'customer_name' => $order->user->first_name.' '.  $order->user->last_name?? 'غير معروف',
                         'product_name' => $item->product->product_name ?? 'غير معروف',
                         'quantity' => $item->quantity . ' كجم',
                         'payment_method' => $order->payment_method ?? 'نقدي',
@@ -265,7 +293,7 @@ class AdminDashbordController extends Controller
             'password' => 'required|string|min:8',
             'address.country' => 'nullable|string',
             'address.city' => 'nullable|string',
-            'address.address' => 'nullable|string', 
+            'address.address' => 'nullable|string',
             'address.state' => 'nullable|string',
             'address.zip_code' => 'nullable|string',
             'address.type' => 'nullable|in:billing,shipping',
@@ -311,18 +339,18 @@ class AdminDashbordController extends Controller
             'password' => 'required|string|min:8',
             'address.country' => 'nullable|string',
             'address.city' => 'nullable|string',
-            'address.address' => 'nullable|string', 
+            'address.address' => 'nullable|string',
             'address.state' => 'nullable|string',
             'address.zip_code' => 'nullable|string',
             'address.type' => 'nullable|in:billing,shipping',
-            'address.company_name' => 'nullable|string',
+            'address.company_name' => 'f|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        
+
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
@@ -352,60 +380,60 @@ class AdminDashbordController extends Controller
         $today = Carbon::today();
         $lastWeekStart = Carbon::now()->subWeek()->startOfWeek();
         $lastWeekEnd = Carbon::now()->subWeek()->endOfWeek();
-    
+
         $ordersLastWeek = Order::whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
             ->selectRaw('DAYOFWEEK(created_at) as day_of_week, COUNT(*) as total_orders')
             ->groupBy('day_of_week')
             ->orderBy('day_of_week')
             ->get();
-    
+
         $ordersPerMonth = Order::selectRaw('MONTH(created_at) as month')
             ->with(['orderItems'])
             ->whereYear('created_at', $today->year)
             ->get()
             ->map(function ($order) {
-             
+
                 if ($order->orderItems->isEmpty()) {
                     return null;
                 }
-    
+
                 $totalAmount = $order->orderItems->reduce(function ($carry, $item) {
-                    return $carry + ($item->price * $item->quantity); 
+                    return $carry + ($item->price * $item->quantity);
                 }, 0);
-    
+
                 return [
                     'month' => $order->created_at->month,
                     'total_amount' => $totalAmount,
                 ];
-            })->filter(); 
-    
+            })->filter();
+
         $activeUsersCount = User::where('status', 'active')->count();
         $inactiveUsersCount = User::where('status', 'inactive')->count();
-    
+
         $totalUsersCount = $activeUsersCount + $inactiveUsersCount;
         $activeUserPercentage = $totalUsersCount > 0 ? ($activeUsersCount / $totalUsersCount) * 100 : 0;
         $inactiveUserPercentage = $totalUsersCount > 0 ? ($inactiveUsersCount / $totalUsersCount) * 100 : 0;
-    
+
         $ordersToday = Order::whereDate('created_at', $today)->count();
-    
+
         $ordersYesterday = Order::whereDate('created_at', $today->yesterday())->count();
         $orderIncreasePercentage = $ordersYesterday > 0 ? (($ordersToday - $ordersYesterday) / $ordersYesterday) * 100 : 0;
-    
+
         $usersToday = User::whereDate('created_at', $today)->count();
-    
+
         $usersYesterday = User::whereDate('created_at', $today->yesterday())->count();
         $userIncreasePercentage = $usersYesterday > 0 ? (($usersToday - $usersYesterday) / $usersYesterday) * 100 : 0;
-    
+
         $productsToday = Order::whereDate('created_at', $today)->count();
-    
+
         $productsYesterday = Order::whereDate('created_at', $today->yesterday())->count();
         $productIncreasePercentage = $productsYesterday > 0 ? (($productsToday - $productsYesterday) / $productsYesterday) * 100 : 0;
-    
+
         $driversToday = User::whereDate('created_at', $today)->where('role', 'driver')->count();
-    
+
         $driversYesterday = User::whereDate('created_at', $today->yesterday())->where('role', 'driver')->count();
         $driverIncreasePercentage = $driversYesterday > 0 ? (($driversToday - $driversYesterday) / $driversYesterday) * 100 : 0;
-    
+
         return response()->json([
             'orders_last_week' => $ordersLastWeek,
             'orders_per_month' => $ordersPerMonth,
@@ -421,7 +449,7 @@ class AdminDashbordController extends Controller
             'driver_increase_percentage' => $driverIncreasePercentage,
         ]);
     }
-    
+
 
 
 
@@ -429,11 +457,11 @@ class AdminDashbordController extends Controller
     {
         $user = User::findOrFail($id);
         $user->delete();
-    
+
         return response()->json([
             'status' => 'success',
             'message' => 'user deleted successfully',
         ], 200);
     }
-    
+
 }
