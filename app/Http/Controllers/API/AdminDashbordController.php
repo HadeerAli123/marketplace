@@ -387,25 +387,33 @@ class AdminDashbordController extends Controller
             ->orderBy('day_of_week')
             ->get();
 
-        $ordersPerMonth = Order::selectRaw('MONTH(created_at) as month')
-            ->with(['orderItems'])
+            $ordersPerMonth = Order::with('orderItems')
             ->whereYear('created_at', $today->year)
             ->get()
             ->map(function ($order) {
-
                 if ($order->orderItems->isEmpty()) {
                     return null;
                 }
-
-                $totalAmount = $order->orderItems->reduce(function ($carry, $item) {
-                    return $carry + ($item->price * $item->quantity);
-                }, 0);
-
+        
+                $totalAmount = $order->orderItems->sum(function ($item) {
+                    return $item->price * $item->quantity;
+                });
+        
                 return [
                     'month' => $order->created_at->month,
                     'total_amount' => $totalAmount,
                 ];
-            })->filter();
+            })
+            ->filter()
+            ->groupBy('month')
+            ->map(function ($orders, $month) {
+                return [
+                    'month' => (int) $month,
+                    'total_amount' => $orders->sum('total_amount')
+                ];
+            })
+            ->values();
+        
 
         $activeUsersCount = User::where('status', 'active')->count();
         $inactiveUsersCount = User::where('status', 'inactive')->count();
