@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
@@ -91,39 +92,67 @@ class AdminDashbordController extends Controller
             return CategoryResource::collection($categories);
     }
 
+
     public function getCategory($id)
     {
-        $category = Category::with(['products'])
-            ->withCount('products')
-            ->withSum('products', 'stock')
-            ->findOrFail($id);
-
-        return response()->json([
-            'id' => $category->id,
-            'category_name' => $category->category_name,
-            'description' => $category->description,
-            'image' => $category->image ? asset($category->image) : null,
-            'updated_at' => $category->updated_at,
-            'products_count' => $category->products_count,
-            'products_sum_stock' => $category->products_sum_stock,
-            'products' => $category->products->map(function ($product) {
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $product->price,
-                    'stock' => $product->stock,
-                ];
-            }),
-        ]);
+        try {
+            $category = Category::with(['products'])
+                ->withCount('products')
+                ->withSum('products', 'stock')
+                ->findOrFail($id);
+    
+            return response()->json([
+                'id' => $category->id,
+                'category_name' => $category->category_name,
+                'description' => $category->description,
+                'image' => $category->image ? asset($category->image) : null,
+                'updated_at' => $category->updated_at,
+                'products_count' => $category->products_count,
+                'products_sum_stock' => $category->products_sum_stock,
+                'products' => $category->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'price' => $product->price,
+                        'stock' => $product->stock,
+                    ];
+                }),
+            ]);
+    
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Category not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+    
 
     public function getUser($id)
     {
-        $user = User::with(['addresses'])->findOrFail($id);
-
-        return new UserResource($user);
-
+        try {
+            $user = User::with(['addresses'])->findOrFail($id);
+            return new UserResource($user);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+    
 
 
     public function createCategory(Request $request)
@@ -146,27 +175,42 @@ class AdminDashbordController extends Controller
         return new CategoryResource($category);
     }
 
+
     public function updateCategory(Request $request, $id)
     {
         $request->validate([
             'category_name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-
         ]);
-
-        $category = Category::findOrFail($id);
-        $data = $request->only(['category_name', 'description']);
-
-
-        if ($request->hasFile('image')) {
-            $data['image'] = ImageService::update($request->file('image'), $category->image, 'uploads/categories');
+    
+        try {
+            $category = Category::findOrFail($id);
+            
+            $data = $request->only(['category_name', 'description']);
+    
+            if ($request->hasFile('image')) {
+                $data['image'] = ImageService::update($request->file('image'), $category->image, 'uploads/categories');
+            }
+    
+            $category->update($data);
+    
+            return new CategoryResource($category);
+    
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Category not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $category->update($data);
-
-        return new CategoryResource($category);
     }
+    
 
 
     public function deleteCategory($id)
@@ -277,11 +321,22 @@ class AdminDashbordController extends Controller
     public function getCustomers()
     {
         $customers = User::where('role', 'customer')
-            ->select('id','phone', 'created_at', 'status', \DB::raw("CONCAT(first_name, ' ', last_name) AS full_name"))
+            ->select('id', 'phone', 'created_at', 'status', \DB::raw("CONCAT(first_name, ' ', last_name) AS full_name"))
             ->get();
-
-        return response()->json($customers);
+    
+        if ($customers->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No customers found',
+            ], 404);
+        }
+    
+        return response()->json([
+            'status' => 'success',
+            'data' => $customers,
+        ]);
     }
+    
 
     public function addDriver(Request $request)
     {
@@ -461,15 +516,30 @@ class AdminDashbordController extends Controller
 
 
 
+
     public function destroyuser($id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
+        try {
+            $user = User::findOrFail($id);
+            $user->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'user deleted successfully',
-        ], 200);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User deleted successfully',
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
 }
