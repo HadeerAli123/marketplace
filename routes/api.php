@@ -30,6 +30,8 @@ Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('edit-profile', [AuthController::class, 'editProfile']);
+        Route::get('categories', [AdminDashbordController::class, 'getCategories']);
+
 
       // For Customers
     Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
@@ -57,7 +59,6 @@ Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
 
             Route::get('drivers', [AdminDashbordController::class, 'getDrivers']);
             Route::get('dashbord-orders', [AdminDashbordController::class, 'getOrders']);
-            Route::get('categories', [AdminDashbordController::class, 'getCategories']);
             Route::get('categories/{id}', [AdminDashbordController::class, 'getCategory']);
             Route::post('categories', [AdminDashbordController::class, 'createCategory']);
             Route::post('categories/{id}', [AdminDashbordController::class, 'updateCategory']);
