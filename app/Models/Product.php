@@ -50,5 +50,11 @@ class Product extends Model
     {
         return $this->hasMany(ProductImage::class);
     }
+
+    public function scopeSearchByName($query, $name)
+    {
+        return $query->where('product_name', 'like', '%' . $name . '%');
+    }
+
 }
 

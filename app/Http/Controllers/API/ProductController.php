@@ -406,4 +406,13 @@ public function productDetails($id)
         $product->forceDelete();
         return response()->json(['message' => 'Product hard deleted successfully.']);
     }
+
+
+    public function search(Request $request)
+    {
+        $products = Product::searchByName($request->input('q'))->get();
+
+        return response()->json($products);
+    }
+
 }
