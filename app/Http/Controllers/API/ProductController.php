@@ -410,9 +410,24 @@ public function productDetails($id)
 
     public function search(Request $request)
     {
-        $products = Product::searchByName($request->input('q'))->get();
-
-        return response()->json($products);
+        $query = $request->input('q');
+    
+        $products = Product::searchByName($query)->get();
+    
+        if ($products->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No products found.',
+                'data' => [],
+            ], 200);
+        }
+    
+        return response()->json([
+            'status' => true,
+            'message' => 'Products found successfully.',
+            'data' => $products,
+        ], 200);
     }
+    
 
 }
