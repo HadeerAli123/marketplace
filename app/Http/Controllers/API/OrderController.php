@@ -669,11 +669,11 @@ public function confirmawaitCart(Request $request)
             'order' => $orderDetails,
         ], 200);
     }
-    public function getOrdersByStatus(Request $request, $status)
+   public function getOrdersByStatus(Request $request, $status)
     {
         try {
             $statusMap = [
-                'to-receive' => 'shipped',
+                'to-receive' => ['shipped', 'processing'],
                 'completed' => 'delivered',
                 'cancelled' => 'canceled',
             ];
@@ -684,28 +684,40 @@ public function confirmawaitCart(Request $request)
     
             $mappedStatus = $statusMap[$status];
     
-            $orders = Order::where('user_id', Auth::id())
-                           ->where('last_status', $mappedStatus)
-                           ->with(['items.product', 'delivery'])
-                           ->get();
+            $query = Order::where('user_id', Auth::id())
+                          ->with(['items.product', 'delivery']);
+    
+            if (is_array($mappedStatus)) {
+                $query->whereIn('last_status', $mappedStatus);
+            } else {
+                $query->where('last_status', $mappedStatus);
+            }
+    
+            $orders = $query->get();
     
             return response()->json([
                 'message' => ucfirst($status) . ' orders retrieved successfully',
                 'data' => $orders->map(function ($order) {
                     $estimatedArrival = $this->calculateEstimatedArrival($order);
     
-                  
                     $totalPrice = $order->items->sum(function ($item) {
                         return $item->quantity * ($item->price ?? $item->product->price);
                     });
     
-                    return [
+            
+                    $response = [
                         'order_number' => $order->id,
                         'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
-                        'estimated_arrival' => $estimatedArrival,
                         'status' => $order->last_status,
                     ];
+    
+                   
+                    if ($order->last_status !== 'processing') {
+                        $response['estimated_arrival'] = $estimatedArrival;
+                    }
+    
+                    return $response;
                 }),
             ], 200);
         } catch (\Exception $e) {
