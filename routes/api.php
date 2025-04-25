@@ -140,7 +140,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
 Route::post('contact-messages', [ContactUsController::class, 'store']);
 
 /// user address
-Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('user-addresses', UserAddressesController::class);
     Route::get('/addresses/billing', [UserAddressesController::class, 'getBillingAddress'])->name('addresses.billing');
 Route::get('/addresses/shipping', [UserAddressesController::class, 'getShippingAddress'])->name('addresses.shipping');

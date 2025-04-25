@@ -52,26 +52,27 @@ class AuthController extends Controller
             'image' => $imagePath,
             'status' => 'inactive',
         ]);
-        $user->addresses()->createMany([
-            [
-                'country' => 'السعودية',
-                'state' => null,
-                'zip_code' => null,
-                'city' => 'الرياض',
-                'address' => 'عنوان الفاتورة الافتراضي',
-                'type' => 'billing',
-                'company_name' => null,
-            ],
-            [
-                'country' => 'السعودية',
-                'state' => null,
-                'zip_code' => null,
-                'city' => 'الرياض',
-                'address' => 'عنوان الشحن الافتراضي',
-                'type' => 'shipping',
-                'company_name' => null,
-            ],
-        ]);
+        
+        // $user->addresses()->createMany([
+        //     [
+        //         'country' => 'السعودية',
+        //         'state' => null,
+        //         'zip_code' => null,
+        //         'city' => 'الرياض',
+        //         'address' => 'عنوان الفاتورة الافتراضي',
+        //         'type' => 'billing',
+        //         'company_name' => null,
+        //     ],
+        //     [
+        //         'country' => 'السعودية',
+        //         'state' => null,
+        //         'zip_code' => null,
+        //         'city' => 'الرياض',
+        //         'address' => 'عنوان الشحن الافتراضي',
+        //         'type' => 'shipping',
+        //         'company_name' => null,
+        //     ],
+        // ]);
         
         Cache::put('otp_' . $user->phone, $otp, now()->addMinutes(10));
 
