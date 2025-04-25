@@ -623,52 +623,49 @@ public function confirmawaitCart(Request $request)
     //         'orders' => $orderDetails,
     //     ], 200);
     // }
-    public function show(string $id)
-    {
-        $userId = auth()->id();
-    
-        $order = Order::where('id', $id)
-                      ->where('user_id', $userId)
-                      ->with('Items.product', 'delivery')
-                      ->firstOrFail();
-    
-        $isAwaitingPrice = $order->last_status === 'awaiting_price_confirmation';
-    
-    
-        $orderDetails = [
-            'order_id' => $order->id,
-            'date' => $order->date,
-            'status' => $order->last_status,
-            'shipping_address' => $order->delivery->address,
-        ];
-    
+  public function show(string $id)
+{
+    $userId = auth()->id();
 
-        $items = $order->Items->map(function ($item) use ($isAwaitingPrice) {
-            $itemDetails = [
-                'product_name' => $item->product->product_name,
-                'quantity' => $item->quantity,
-            ];
-    
-           
-            if (!$isAwaitingPrice) {
-                $itemDetails['price'] = $item->price;
-                $itemDetails['total'] = $item->price * $item->quantity;
-            }
-    
-            return $itemDetails;
-        });
-    
-        $orderDetails['items'] = $items;
-    
+    $order = Order::where('id', $id)
+                  ->where('user_id', $userId)
+                  ->with('Items.product', 'delivery')
+                  ->firstOrFail();
+
+    $isAwaitingPrice = $order->last_status === 'awaiting_price_confirmation';
+
+    $orderDetails = [
+        'order_id' => $order->id,
+        'date' => $order->date,
+        'status' => $order->last_status,
+        'shipping_address' => $order->delivery?->address ?? 'No shipping address available',
+    ];
+
+    $items = $order->Items->map(function ($item) use ($isAwaitingPrice) {
+        $itemDetails = [
+            'product_name' => $item->product->product_name,
+            'quantity' => $item->quantity,
+        ];
+
         if (!$isAwaitingPrice) {
-            $orderDetails['total_price'] = $items->sum('total');
+            $itemDetails['price'] = $item->price;
+            $itemDetails['total'] = $item->price * $item->quantity;
         }
-    
-        return response()->json([
-            'status' => 'success',
-            'order' => $orderDetails,
-        ], 200);
+
+        return $itemDetails;
+    });
+
+    $orderDetails['items'] = $items;
+
+    if (!$isAwaitingPrice) {
+        $orderDetails['total_price'] = $items->sum('total');
     }
+
+    return response()->json([
+        'status' => 'success',
+        'order' => $orderDetails,
+    ], 200);
+}
    public function getOrdersByStatus(Request $request, $status)
     {
         try {
