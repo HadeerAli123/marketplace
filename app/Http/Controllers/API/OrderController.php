@@ -623,57 +623,54 @@ public function confirmawaitCart(Request $request)
     //         'orders' => $orderDetails,
     //     ], 200);
     // }
-    public function show(string $id)
-    {
-        $userId = auth()->id();
-    
-        $order = Order::where('id', $id)
-                      ->where('user_id', $userId)
-                      ->with('Items.product', 'delivery')
-                      ->firstOrFail();
-    
-        $isAwaitingPrice = $order->last_status === 'awaiting_price_confirmation';
-    
-    
-        $orderDetails = [
-            'order_id' => $order->id,
-            'date' => $order->date,
-            'status' => $order->last_status,
-            'shipping_address' => $order->delivery->address,
-        ];
-    
+  public function show(string $id)
+{
+    $userId = auth()->id();
 
-        $items = $order->Items->map(function ($item) use ($isAwaitingPrice) {
-            $itemDetails = [
-                'product_name' => $item->product->product_name,
-                'quantity' => $item->quantity,
-            ];
-    
-           
-            if (!$isAwaitingPrice) {
-                $itemDetails['price'] = $item->price;
-                $itemDetails['total'] = $item->price * $item->quantity;
-            }
-    
-            return $itemDetails;
-        });
-    
-        $orderDetails['items'] = $items;
-    
+    $order = Order::where('id', $id)
+                  ->where('user_id', $userId)
+                  ->with('Items.product', 'delivery')
+                  ->firstOrFail();
+
+    $isAwaitingPrice = $order->last_status === 'awaiting_price_confirmation';
+
+    $orderDetails = [
+        'order_id' => $order->id,
+        'date' => $order->date,
+        'status' => $order->last_status,
+        'shipping_address' => $order->delivery?->address ?? 'No shipping address available',
+    ];
+
+    $items = $order->Items->map(function ($item) use ($isAwaitingPrice) {
+        $itemDetails = [
+            'product_name' => $item->product->product_name,
+            'quantity' => $item->quantity,
+        ];
+
         if (!$isAwaitingPrice) {
-            $orderDetails['total_price'] = $items->sum('total');
+            $itemDetails['price'] = $item->price;
+            $itemDetails['total'] = $item->price * $item->quantity;
         }
-    
-        return response()->json([
-            'status' => 'success',
-            'order' => $orderDetails,
-        ], 200);
+
+        return $itemDetails;
+    });
+
+    $orderDetails['items'] = $items;
+
+    if (!$isAwaitingPrice) {
+        $orderDetails['total_price'] = $items->sum('total');
     }
-    public function getOrdersByStatus(Request $request, $status)
+
+    return response()->json([
+        'status' => 'success',
+        'order' => $orderDetails,
+    ], 200);
+}
+   public function getOrdersByStatus(Request $request, $status)
     {
         try {
             $statusMap = [
-                'to-receive' => 'shipped',
+                'to-receive' => ['shipped', 'processing'],
                 'completed' => 'delivered',
                 'cancelled' => 'canceled',
             ];
@@ -684,28 +681,40 @@ public function confirmawaitCart(Request $request)
     
             $mappedStatus = $statusMap[$status];
     
-            $orders = Order::where('user_id', Auth::id())
-                           ->where('last_status', $mappedStatus)
-                           ->with(['items.product', 'delivery'])
-                           ->get();
+            $query = Order::where('user_id', Auth::id())
+                          ->with(['items.product', 'delivery']);
+    
+            if (is_array($mappedStatus)) {
+                $query->whereIn('last_status', $mappedStatus);
+            } else {
+                $query->where('last_status', $mappedStatus);
+            }
+    
+            $orders = $query->get();
     
             return response()->json([
                 'message' => ucfirst($status) . ' orders retrieved successfully',
                 'data' => $orders->map(function ($order) {
                     $estimatedArrival = $this->calculateEstimatedArrival($order);
     
-                  
                     $totalPrice = $order->items->sum(function ($item) {
                         return $item->quantity * ($item->price ?? $item->product->price);
                     });
     
-                    return [
+            
+                    $response = [
                         'order_number' => $order->id,
                         'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
-                        'estimated_arrival' => $estimatedArrival,
                         'status' => $order->last_status,
                     ];
+    
+                   
+                    if ($order->last_status !== 'processing') {
+                        $response['estimated_arrival'] = $estimatedArrival;
+                    }
+    
+                    return $response;
                 }),
             ], 200);
         } catch (\Exception $e) {
