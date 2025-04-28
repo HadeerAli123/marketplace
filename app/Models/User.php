@@ -33,34 +33,44 @@ class User extends Authenticatable implements MustVerifyEmail{
     ];
 }
 
- 
+
+    public function shippingAddress()
+    {
+        return $this->hasOne(UsersAddress::class)->where('type', 'shipping');
+    }
+
+    public function billingAddress()
+    {
+        return $this->hasOne(UsersAddress::class)->where('type', 'billing');
+    }
+
     public function addresses()
     {
         return $this->hasMany(UsersAddress::class);
     }
     public function products()
-{
-    return $this->hasMany(Product::class);
-}
+    {
+        return $this->hasMany(Product::class);
+    }
 
-public function orders()
-{
-    return $this->hasMany(Order::class);
-}
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 
-public function spotModes()
-{
-    return $this->hasMany(SpotMode::class);
-}
+    public function spotModes()
+    {
+        return $this->hasMany(SpotMode::class);
+    }
 
-public function deliveries()
-{
-    return $this->hasMany(Delivery::class, 'driver_id');
-}
-public function carts()
-{
-    return $this->hasMany(Cart::class);
-}
+    public function deliveries()
+    {
+        return $this->hasMany(Delivery::class, 'driver_id');
+    }
+    public function carts()
+    {
+        return $this->hasMany(Cart::class);
+    }
 
 
 // public function getEmailForVerification()

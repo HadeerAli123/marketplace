@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AdminDashbordController;
+use App\Http\Controllers\API\DeliveryController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
@@ -51,7 +52,9 @@ Route::get('products/search', [ProductController::class, 'search']);
 
 
         Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
-            Route::get('/driver/dashboard', fn() => response()->json(['message' => 'Welcome Driver']));
+            Route::get('/available-for-delivery', [DeliveryController::class, 'getAvailableOrdersForDelivery']);
+            Route::get('/get-My-orders', [DeliveryController::class, 'getMyDeliveries']);
+            Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
         });
         Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
             Route::get('/admin/dashboard', function () {
@@ -104,7 +107,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
     Route::get('/products/byCategory/{categoryId}', [ProductController::class, 'getProductsByCategory']);
 });
 
-// order 
+// order
     Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::post('/orders', [OrderController::class, 'createOrder']);
@@ -119,7 +122,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
 
     // cart
   Route::middleware(['auth:sanctum',  CustomerMiddleware::class])->group(function () {
-   
+
       Route::post('/cart', [CartController::class, 'store']);
       Route::get('/cart', [CartController::class, 'index']);
       Route::post('/cart/cancel', [CartController::class, 'cancelCart']);
@@ -128,7 +131,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::put('/cart-items/{id}', [CartItemsController::class, 'update']);
         Route::delete('/cart-items/{id}', [CartItemsController::class, 'destroy']);
         Route::get('/cart-items/my-items', [CartItemsController::class , 'getMyItems']);
-      
+
     });
 
   // contact
@@ -146,7 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/addresses/shipping', [UserAddressesController::class, 'getShippingAddress'])->name('addresses.shipping');
 });
 
-///spot mode 
+///spot mode
 Route::middleware(['auth:sanctum',  AdminMiddleware::class])->group(function () {
     Route::post('spot-mode/activate', [SpotModeController::class, 'activate']);
     Route::post('spot-mode/deactivate', [SpotModeController::class, 'deactivate']);
