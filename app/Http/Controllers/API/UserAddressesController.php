@@ -30,6 +30,8 @@ class UserAddressesController extends Controller
             'zip_code' => 'nullable|string',
             'city' => 'required|string',
             'address' => 'required|string',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
             'type' => 'required|in:billing,shipping',
             'company_name' => 'nullable|string',
         ]);
@@ -41,7 +43,7 @@ class UserAddressesController extends Controller
         if ($existingAddress) {
             return response()->json([
                 'status' => 'error',
-                'message' => "You already have a {$request->type} address. Please update the existing one or delete it first.",
+                'message' => "You already have a {$request->type} address. Please update or delete it first.",
             ], 400);
         }
 
@@ -52,13 +54,15 @@ class UserAddressesController extends Controller
             'zip_code' => $request->zip_code,
             'city' => $request->city,
             'address' => $request->address,
+            'lat' => $request->lat,
+            'lng' => $request->lng,
             'type' => $request->type,
             'company_name' => $request->company_name,
         ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Address created successfully',
+            'message' => 'Address created successfully.',
             'data' => $address,
         ], 201);
     }
@@ -78,39 +82,40 @@ class UserAddressesController extends Controller
     {
         $user = Auth::user();
         $address = UsersAddress::where('user_id', $user->id)->findOrFail($id);
-    
+
         $request->validate([
             'country' => 'nullable|string',
             'state' => 'nullable|string',
             'zip_code' => 'nullable|string',
             'city' => 'nullable|string',
             'address' => 'nullable|string',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
             'type' => 'nullable|in:billing,shipping',
             'company_name' => 'nullable|string',
         ]);
-    
-        $data = $request->only(['country', 'state', 'zip_code', 'city', 'address', 'type', 'company_name']);
-    
-        if ($address->type !== $request->type) {
+
+        $data = $request->only(['country', 'state', 'zip_code', 'city', 'address', 'lat', 'lng', 'type', 'company_name']);
+
+        if ($request->has('type') && $address->type !== $request->type) {
             $existingAddress = UsersAddress::where('user_id', $user->id)
                 ->where('type', $request->type)
                 ->where('id', '!=', $id)
                 ->first();
-    
+
             if ($existingAddress) {
                 $existingAddress->delete();
             }
         }
-    
+
         $address->update(array_filter($data));
-    
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Address updated successfully',
+            'message' => 'Address updated successfully.',
             'data' => $address,
         ], 200);
     }
-    
 
     public function destroy($id)
     {
@@ -120,7 +125,7 @@ class UserAddressesController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Address deleted successfully',
+            'message' => 'Address deleted successfully.',
         ], 200);
     }
 
@@ -128,13 +133,13 @@ class UserAddressesController extends Controller
     {
         $user = Auth::user();
         $billingAddress = UsersAddress::where('user_id', $user->id)
-                                    ->where('type', 'billing')
-                                    ->first();
+                                      ->where('type', 'billing')
+                                      ->first();
 
         if (!$billingAddress) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Billing address not found',
+                'message' => 'Billing address not found.',
             ], 404);
         }
 
@@ -148,13 +153,13 @@ class UserAddressesController extends Controller
     {
         $user = Auth::user();
         $shippingAddress = UsersAddress::where('user_id', $user->id)
-                                    ->where('type', 'shipping')
-                                    ->first();
+                                       ->where('type', 'shipping')
+                                       ->first();
 
         if (!$shippingAddress) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Shipping address not found',
+                'message' => 'Shipping address not found.',
             ], 404);
         }
 
@@ -164,4 +169,3 @@ class UserAddressesController extends Controller
         ], 200);
     }
 }
-

@@ -13,12 +13,12 @@ class ProductResource extends JsonResource
         $isSpotModeActive = SpotMode::isActive();
 
         return [
-           'id' => $this->id,
+            'id' => $this->id,
             'product_name' => $this->product_name,
-            'price' => $isSpotModeActive ? $this->price : 'Price to be confirmed later',
+            'price' => $isSpotModeActive ? $this->price : $this->regular_price,
             'description' => $this->description,
             'stock' => $this->stock,
-            'cover_image' => asset('uploads/products/' . $this->cover_image), // تصحيح الاسم
+            'cover_image' => asset('uploads/products/' . $this->cover_image),
             'category' => new CategoryResource($this->whenLoaded('category')),
             'user' => new UserResource($this->whenLoaded('user')),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),

@@ -13,6 +13,8 @@ class UsersAddress extends Model
         'zip_code',
         'city',
         'address',
+        'lat',
+        'lng',
         'type',
         'company_name',
     ];

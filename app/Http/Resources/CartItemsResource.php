@@ -12,7 +12,7 @@ class CartItemsResource extends JsonResource
         $product = $this->product;
         $isSpotModeActive = SpotMode::isActive();
 
-        $price = $isSpotModeActive ? $product->price : 'Price to be confirmed later';
+        $price = $isSpotModeActive ? $product->price : $product->regular_price; 
 
         return [
             'id' => $this->id,

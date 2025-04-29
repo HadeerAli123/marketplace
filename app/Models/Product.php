@@ -15,6 +15,7 @@ class Product extends Model
         'cover_image',
         'description',
         'price',
+        'regular_price',
         'stock',
         'user_id',
         'category_id',

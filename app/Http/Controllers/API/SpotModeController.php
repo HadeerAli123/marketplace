@@ -5,9 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\SpotMode;
 use App\Models\Cart;
-use App\Models\Order;
-use App\Models\UsersAddress;
-use App\Models\Delivery;
+use App\Models\CartItem;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +20,7 @@ class SpotModeController extends Controller
         ]);
 
         if (SpotMode::isActive()) {
-            return response()->json(['error' => 'A Spot Mode is already active'], 400);
+            return response()->json(['error' => 'Spot Mode is already active'], 400);
         }
 
         $currentTime = now();
@@ -40,98 +39,67 @@ class SpotModeController extends Controller
             ]);
 
             if ($status === 'active') {
-               
-                $orders = Order::where('last_status', 'awaiting_price_confirmation')
-                               ->with('items.product')
-                               ->get();
-
-                foreach ($orders as $order) {
-                    $shippingAddress = UsersAddress::where('user_id', $order->user_id)
-                                                   ->where('type', 'shipping')
-                                                   ->first();
-
-                    if (!$shippingAddress) {
-                        \Log::warning("No shipping address for order ID: {$order->id}");
-                        continue;
+      
+                $carts = Cart::where('status', 'pending')->with('items.product')->get();
+                foreach ($carts as $cart) {
+                    foreach ($cart->items as $item) {
+                        $product = $item->product;
+                        $item->update(['price' => $product->price]); 
                     }
-
-                    $totalOrderPrice = 0;
-
-                    foreach ($order->items as $orderItem) {
-                        $product = $orderItem->product;
-
-                        if ($product->stock < $orderItem->quantity) {
-                            throw new \Exception("Insufficient stock for product: {$product->product_name}");
-                        }
-
-                        $price = $product->price; 
-                        $totalPrice = $price * $orderItem->quantity;
-
-                        $orderItem->update([
-                            'price' => $price,
-                            'total_price' => $totalPrice,
-                        ]);
-
-                        $totalOrderPrice += $totalPrice;
-                    }
-
-                    $order->update([
-                        'last_status' => 'processing',
-                        'total_price' => $totalOrderPrice,
-                    ]);
-
-                    Delivery::create([
-                        'order_id' => $order->id,
-                        'user_id' => $order->user_id,
-                        'address' => $shippingAddress->address,
-                        'status' => 'new',
-                    ]);
+                    $cart->total_price = $cart->items->sum(function ($item) {
+                        return $item->price * $item->quantity;
+                    });
+                    $cart->save();
                 }
             }
 
             DB::commit();
             return response()->json([
                 'message' => $status === 'active' 
-                    ? 'Spot Mode activated successfully, awaiting orders updated to pending' 
+                    ? 'Spot Mode activated successfully and cart prices updated' 
                     : 'Spot Mode scheduled successfully',
                 'spot_mode' => $spotMode,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Spot Mode activation failed: ' . $e->getMessage());
+            \Log::error('Failed to activate Spot Mode: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to activate Spot Mode: ' . $e->getMessage()], 500);
         }
     }
+
     public function deactivate()
     {
         $spotMode = SpotMode::where('status', 'active')->first();
         if (!$spotMode) {
             return response()->json(['error' => 'No active Spot Mode found'], 404);
         }
-    
+
         DB::beginTransaction();
         try {
             $spotMode->update(['status' => 'not_active']);
-       
-            $cartIds = Cart::whereIn('status', ['pending', 'awaiting_price_confirmation'])->pluck('id');
-    
-         
-            DB::table('cart_items')
-                ->whereIn('cart_id', $cartIds)
-                ->delete();
-    
-            Cart::whereIn('id', $cartIds)->update(['status' => 'pending']);
-    
+            
+
+            $carts = Cart::where('status', 'pending')->with('items.product')->get();
+            foreach ($carts as $cart) {
+                foreach ($cart->items as $item) {
+                    $product = $item->product;
+                    $item->update(['price' => $product->regular_price]);
+                }
+                $cart->total_price = $cart->items->sum(function ($item) {
+                    return $item->price * $item->quantity;
+                });
+                $cart->save();
+            }
+
             DB::commit();
             return response()->json([
-                'message' => 'Spot Mode deactivated successfully, pending and awaiting carts cleared and reset to pending, ',
+                'message' => 'Spot Mode deactivated successfully and cart prices updated',
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Spot Mode deactivation failed: ' . $e->getMessage());
+            \Log::error('Failed to deactivate Spot Mode: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to deactivate Spot Mode: ' . $e->getMessage()], 500);
         }
-    
     }
 
     public function getStatus()
