@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Delivery extends Model
 {
-    protected $fillable = ['order_id', 'driver_id', 'status', 'delivery_time','address'];
+    protected $fillable = ['order_id', 'driver_id', 'status', 'delivery_time','address','delivery_fee'];
 
     protected $casts = [
         'delivery_time' => 'datetime',

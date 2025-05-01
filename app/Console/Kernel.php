@@ -1,30 +1,39 @@
 <?php
 
-namespace app\Console;
+// namespace App\Console;
 
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use Illuminate\Support\Facades\Log;
+// use Illuminate\Console\Scheduling\Schedule;
+// use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+// use Illuminate\Support\Facades\Log;
+// use App\Console\Commands\ClearCartsOnSpotModeClose;
 
-class Kernel extends ConsoleKernel
-{
-    protected $commands = [
-        \app\Console\Commands\ClearCartsOnSpotModeClose::class,
-    ];
+// class Kernel extends ConsoleKernel
+// {
+//     /**
+//      * The Artisan commands provided by your application.
+//      *
+//      * @var array
+//      */
+//     protected $commands = [
+//         ClearCartsOnSpotModeClose::class,
+//     ];
 
-    protected function schedule(Schedule $schedule)
-    {
-        Log::info('Scheduler is running at ' . now());
-        $schedule->command('spotmode:clear-carts')->everyMinute()->onSuccess(function () {
-            Log::info('spotmode:clear-carts executed successfully at ' . now());
-        })->onFailure(function () {
-            Log::error('spotmode:clear-carts failed at ' . now());
-        });
-    }
+//     /**
+//      * Define the application's command schedule.
+//      */
+//     protected function schedule(Schedule $schedule)
+//     {
+//         $schedule->command('spotmode:clear-carts')->everyMinute();
+//         Log::info('Scheduled task registered at ' . now()); // للتأكد إن الجدولة شغالة
+//     }
 
-    protected function commands()
-    {
-        $this->load(__DIR__.'/Commands');
-        require base_path('routes/console.php');
-    }
-}
+//     /**
+//      * Register the commands for the application.
+//      */
+//     protected function commands()
+//     {
+//         $this->load(__DIR__.'/Commands');
+
+//         require base_path('routes/console.php');
+//     }
+// }

@@ -16,27 +16,27 @@ class CartItemsController extends Controller
     {
         try {
             $cart = Cart::where('user_id', Auth::id())
-                        ->whereIn('status', ['pending', 'awaiting_price_confirmation'])
+                        ->where('status', 'pending')
                         ->with('items.product')
                         ->first();
     
             if (!$cart || $cart->items->isEmpty()) {
-                return response()->json(['message' => 'No items found in your cart'], 200);
+                return response()->json(['message' => 'No items in the cart'], 200);
             }
     
             $isSpotModeActive = SpotMode::isActive();
     
             $cartItems = $cart->items->map(function ($item) use ($isSpotModeActive) {
-                $price = $isSpotModeActive ? $item->product->price : null;
+                $price = $isSpotModeActive ? $item->product->price : $item->product->regular_price;
                 return [
                     'id' => $item->id,
                     'cart_id' => $item->cart_id,
                     'product_id' => $item->product_id,
                     'product_name' => $item->product->product_name,
                     'quantity' => $item->quantity,
-                    'price' => $price ?? 'Price to be confirmed later',
-                    'total' => $price ? ($price * $item->quantity) : null,
-                    'cover_image' => $item->product->cover_image ?? 'No image available', 
+                    'price' => $price,
+                    'total' => $price * $item->quantity,
+                    'cover_image' => $item->product->cover_image ? asset('uploads/products/' . $item->product->cover_image) : 'No image available',
                 ];
             });
     
@@ -55,7 +55,7 @@ class CartItemsController extends Controller
         $userId = Auth::id();
     
         $cart = Cart::where('user_id', $userId)
-                    ->whereIn('status', ['pending', 'awaiting_price_confirmation'])
+                    ->where('status', 'pending')
                     ->first();
     
         if (!$cart) {
@@ -67,34 +67,37 @@ class CartItemsController extends Controller
         }
     
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
         ]);
     
-        $product = Product::findOrFail($request->product_id);
+
+        $product = Product::find($request->product_id);
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
     
-       
+    
         if ($product->stock < $request->quantity) {
-            return response()->json(['error' => 'Requested quantity exceeds available stock'], 400);
+            return response()->json(['error' => 'The requested quantity exceeds the available stock'], 400);
         }
     
         $isSpotModeActive = SpotMode::isActive();
-        $price = $isSpotModeActive ? $product->price : null;
+        $price = $isSpotModeActive ? $product->price : $product->regular_price;
     
         $cartItem = CartItem::where('cart_id', $cart->id)
                             ->where('product_id', $request->product_id)
                             ->first();
     
         if ($cartItem) {
-       
             $newQuantity = $cartItem->quantity + $request->quantity;
             if ($product->stock < $newQuantity) {
-                return response()->json(['error' => 'Requested quantity exceeds available stock'], 400);
+                return response()->json(['error' => 'The requested quantity exceeds the available stock'], 400);
             }
     
             $cartItem->update([
                 'quantity' => $newQuantity,
-                'price' => $isSpotModeActive ? $product->price : $cartItem->price,
+                'price' => $price,
             ]);
         } else {
             $cartItem = CartItem::create([
@@ -105,12 +108,10 @@ class CartItemsController extends Controller
             ]);
         }
     
-        if ($isSpotModeActive) {
-            $cart->total_price = $cart->items->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            $cart->save();
-        }
+        $cart->total_price = $cart->items->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+        $cart->save();
     
         return response()->json([
             'message' => 'Product added to cart successfully',
@@ -119,15 +120,14 @@ class CartItemsController extends Controller
                 'cart_id' => $cartItem->cart_id,
                 'product_id' => $cartItem->product_id,
                 'quantity' => $cartItem->quantity,
-                'price' => $isSpotModeActive ? $cartItem->price : 'Price to be confirmed later',
+                'price' => $cartItem->price,
                 'created_at' => $cartItem->created_at,
                 'updated_at' => $cartItem->updated_at,
             ],
         ], 201);
     }
-
-
-
+    
+    
     public function update(Request $request, $id)
     {
         $cartItem = CartItem::where('id', $id)
@@ -136,10 +136,10 @@ class CartItemsController extends Controller
                             })
                             ->firstOrFail();
     
-        if (!in_array($cartItem->cart->status, ['pending', 'awaiting_price_confirmation'])) {
+        if ($cartItem->cart->status !== 'pending') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Cannot update cart item. The cart must be in a pending or awaiting price confirmation state.',
+                'message' => 'Cannot update cart item. The cart must be in pending status.',
             ], 403);
         }
     
@@ -149,27 +149,24 @@ class CartItemsController extends Controller
     
         $product = $cartItem->product;
     
-       
         $quantityDifference = $request->quantity - $cartItem->quantity;
         if ($quantityDifference > 0 && $quantityDifference > $product->stock) {
             return response()->json(['error' => 'Requested quantity exceeds available stock'], 400);
         }
     
         $isSpotModeActive = SpotMode::isActive();
-        $price = $isSpotModeActive ? $product->price : $cartItem->price;
+        $price = $isSpotModeActive ? $product->price : $product->regular_price;
     
         $cartItem->update([
             'quantity' => $request->quantity,
             'price' => $price,
         ]);
     
-        if ($isSpotModeActive) {
-            $cart = $cartItem->cart;
-            $cart->total_price = $cart->items->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            $cart->save();
-        }
+        $cart = $cartItem->cart;
+        $cart->total_price = $cart->items->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+        $cart->save();
     
         return response()->json([
             'message' => 'Cart item updated successfully',
@@ -178,14 +175,12 @@ class CartItemsController extends Controller
                 'cart_id' => $cartItem->cart_id,
                 'product_id' => $cartItem->product_id,
                 'quantity' => $cartItem->quantity,
-                'price' => $isSpotModeActive ? $cartItem->price : 'Price to be confirmed later',
+                'price' => $cartItem->price,
                 'created_at' => $cartItem->created_at,
                 'updated_at' => $cartItem->updated_at,
             ],
         ], 200);
     }
-
-
 
     public function destroy($id)
     {
@@ -195,23 +190,20 @@ class CartItemsController extends Controller
                             })
                             ->firstOrFail();
 
-        if (!in_array($cartItem->cart->status, ['pending', 'awaiting_price_confirmation'])) {
+        if ($cartItem->cart->status !== 'pending') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Cannot delete cart item. The cart must be in a pending or awaiting price confirmation state.',
+                'message' => 'Cannot delete cart item. The cart must be in pending status.',
             ], 403);
         }
 
         $cart = $cartItem->cart;
         $cartItem->delete();
 
-       
-        if (SpotMode::isActive()) {
-            $cart->total_price = $cart->items->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            $cart->save();
-        }
+        $cart->total_price = $cart->items->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+        $cart->save();
 
         return response()->json([
             'message' => 'Product removed from cart successfully',
