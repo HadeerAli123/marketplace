@@ -76,6 +76,7 @@ Route::get('products/search', [ProductController::class, 'search']);
             Route::get('allproducts', [AdminDashbordController::class, 'getProducts']);
             Route::get('getUser/{id}', [AdminDashbordController::class, 'getUser']);
             Route::delete('destroyuser/{id}', [AdminDashbordController::class, 'destroyuser']);
+            Route::delete('destroyproduct/{id}', [ProductController::class, 'destroy']);
 
 
         });
@@ -92,6 +93,8 @@ Route::get('/user', function (Request $request) {
 
 Route::apiResource('orders', OrderController::class)->middleware('auth:sanctum');
 Route::apiResource('order-items', OrderItemsController::class);
+Route::middleware('auth:sanctum')->put('order-status/{order}', [OrderController::class, 'updateStatus']);
+
 
 // products
 Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {

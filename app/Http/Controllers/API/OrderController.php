@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\OrderResource;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\SpotMode;
@@ -17,9 +18,9 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    
+
     /////testok
-    
+
     public function index()
 {
     $userId = auth()->id();
@@ -44,7 +45,7 @@ class OrderController extends Controller
                     'quantity' => $item->quantity,
                 ];
 
-              
+
                 if ($showPrices) {
                     $productData['price'] = $item->price;
                 }
@@ -53,7 +54,7 @@ class OrderController extends Controller
             }),
         ];
 
-       
+
         if ($showPrices) {
             $orderData['total_price'] = $order->items->sum(function ($item) {
                 return $item->price * $item->quantity;
@@ -110,16 +111,16 @@ public function createOrder(Request $request)
 
     try {
         if (!$isSpotModeActive) {
-     
+
             if ($request->action === 'confirm_later') {
-              
+
                 $cart->update(['status' => 'awaiting_price_confirmation']);
                 DB::commit();
                 return response()->json([
                     'message' => 'Cart is awaiting price confirmation. Please confirm when Spot Mode is active.',
                 ], 200);
             } elseif ($request->action === 'buy_anyway') {
-                
+
                 $order = Order::create([
                     'user_id' => $userId,
                     'last_status' => 'awaiting_price_confirmation',
@@ -138,7 +139,7 @@ public function createOrder(Request $request)
                         throw new \Exception('Requested quantity for ' . $product->product_name . ' exceeds available stock');
                     }
 
-                    
+
                     $price = 0;
                     $totalPrice = 0;
 
@@ -165,7 +166,7 @@ public function createOrder(Request $request)
                 ], 201);
             }
         } else {
-          
+
             $order = Order::create([
                 'user_id' => $userId,
                 'last_status' => 'processing',
@@ -272,7 +273,7 @@ public function confirmawaitCart(Request $request)
     try {
         $order = Order::create([
             'user_id' => $userId,
-            'last_status' => 'processing', 
+            'last_status' => 'processing',
             'date' => $orderDate,
         ]);
 
@@ -416,18 +417,18 @@ public function confirmawaitCart(Request $request)
     //     $order = Order::where('id', $orderId)
     //                   ->where('user_id', auth()->id())
     //                   ->firstOrFail();
-    
+
     //     if ($order->last_status !== 'pending') {
     //         return response()->json(['error' => 'Order already processed'], 403);
     //     }
-    
+
     //     DB::beginTransaction();
-    
+
     //     try {
     //         $order->update(['last_status' => 'processing']);
-    
+
     //         DB::commit();
-    
+
     //         return response()->json([
     //             'message' => 'Order confirmed successfully',
     //             'order_id' => $order->id,
@@ -452,8 +453,8 @@ public function confirmawaitCart(Request $request)
     //         return response()->json(['message' => 'No orders to assign'], 200);
     //     }
 
-    //     $driverId = $request->input('driver_id'); 
-    //     $assignToAll = is_null($driverId); 
+    //     $driverId = $request->input('driver_id');
+    //     $assignToAll = is_null($driverId);
 
     //     if (!$assignToAll) {
     //         $driver = User::where('role', 'driver')->find($driverId);
@@ -523,19 +524,19 @@ public function confirmawaitCart(Request $request)
     // {
     //     try {
     //         $driver = Auth::user();
-    
+
     //         $order = Order::findOrFail($orderId);
     //         if ($order->last_status !== 'shipped') {
     //             return response()->json(['error' => 'Order cannot be accepted at this stage'], 403);
     //         }
-    
+
     //         $existingDelivery = Delivery::where('order_id', $orderId)->first();
-    
+
     //         if ($existingDelivery) {
     //             if ($existingDelivery->driver_id !== $driver->id) {
     //                 return response()->json(['error' => 'Order already assigned to another driver'], 403);
     //             }
-    
+
     //             $existingDelivery->update([
     //                 'status' => 'in_progress',
     //             ]);
@@ -547,12 +548,12 @@ public function confirmawaitCart(Request $request)
     //                 'address' => $order->user->address,
     //             ]);
     //         }
-    
+
     //         $admin = User::where('role', 'admin')->first();
     //         if ($admin) {
     //             $admin->notify(new OrderAssignedNotification($order, $driver));
     //         }
-    
+
     //         return response()->json(['message' => 'Order accepted successfully'], 200);
     //     } catch (\Exception $e) {
     //         return response()->json(['error' => $e->getMessage()], 500);
@@ -588,7 +589,7 @@ public function confirmawaitCart(Request $request)
     //     }
     // }
 
-   
+
     // public function getDriverOrders()
 
     // {
@@ -674,46 +675,46 @@ public function confirmawaitCart(Request $request)
                 'completed' => 'delivered',
                 'cancelled' => 'canceled',
             ];
-    
+
             if (!array_key_exists($status, $statusMap)) {
                 return response()->json(['error' => 'Invalid status'], 400);
             }
-    
+
             $mappedStatus = $statusMap[$status];
-    
+
             $query = Order::where('user_id', Auth::id())
                           ->with(['items.product', 'delivery']);
-    
+
             if (is_array($mappedStatus)) {
                 $query->whereIn('last_status', $mappedStatus);
             } else {
                 $query->where('last_status', $mappedStatus);
             }
-    
+
             $orders = $query->get();
-    
+
             return response()->json([
                 'message' => ucfirst($status) . ' orders retrieved successfully',
                 'data' => $orders->map(function ($order) {
                     $estimatedArrival = $this->calculateEstimatedArrival($order);
-    
+
                     $totalPrice = $order->items->sum(function ($item) {
                         return $item->quantity * ($item->price ?? $item->product->price);
                     });
-    
-            
+
+
                     $response = [
                         'order_number' => $order->id,
                         'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
                         'status' => $order->last_status,
                     ];
-    
-                   
+
+
                     if ($order->last_status !== 'processing') {
                         $response['estimated_arrival'] = $estimatedArrival;
                     }
-    
+
                     return $response;
                 }),
             ], 200);
@@ -721,34 +722,60 @@ public function confirmawaitCart(Request $request)
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    
+
     private function calculateEstimatedArrival($order)
     {
         if ($order->last_status === 'canceled') {
             return 'Pick up was unsuccessful';
         }
-    
+
         if ($order->last_status === 'delivered') {
             if ($order->delivery && $order->delivery->delivery_time) {
                 return 'Delivered on ' . $order->delivery->delivery_time->format('d/m/Y h:i A');
             }
             return 'Delivered';
         }
-    
+
         if ($order->last_status === 'shipped') {
             $baseDeliveryTime = 40;
             $createdAt = $order->created_at;
             $estimatedDeliveryTime = $createdAt->copy()->addMinutes($baseDeliveryTime);
             $now = now();
-    
+
             if ($now->lessThan($estimatedDeliveryTime)) {
                 $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
                 return "Arriving in $remainingMinutes min";
             }
-    
+
             return 'Delayed';
         }
-    
+
         return 'Unknown status';
     }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,canceled,shipped,processing,delivered',
+        ]);
+
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        $order->last_status = $request->status;
+        $order->save();
+
+        return response()->json([
+            'message' => 'Order status updated successfully.',
+            'order' => new OrderResource($order),
+        ]);
+    }
+
+
+
 }
