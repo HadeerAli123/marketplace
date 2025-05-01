@@ -309,7 +309,7 @@ class ProductController extends Controller
             return response()->json(['error' => 'Failed to update product: ' . $e->getMessage()], 500);
         }
     }
-    public function destroy(Product $product)
+    public function destroy(Product $id)
     {
         $product = Product::withTrashed()->find($id);
     
