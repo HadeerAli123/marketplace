@@ -768,7 +768,6 @@ public function confirmawaitCart(Request $request)
                               $query->select('id', 'order_id', 'delivery_time');
                           }]);
 
-                          ->with(['items.product', 'delivery']);
 
             if (is_array($mappedStatus)) {
                 $query->whereIn('last_status', $mappedStatus);
