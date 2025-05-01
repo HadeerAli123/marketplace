@@ -239,8 +239,10 @@ class AdminDashbordController extends Controller
 
     public function getProducts()
     {
-        $products = Product::with('category')->get();
-
+        $products = Product::with('category')
+            ->whereNull('deleted_at') // استبعاد المحذوفة
+            ->get();
+    
         $formatted = $products->map(function ($product) {
             return [
                 'price' => $product->price,
@@ -249,14 +251,14 @@ class AdminDashbordController extends Controller
                 'product_name' => $product->product_name,
                 'stock' => $product->stock,
                 'image' => $product->cover_image
-                    ?  asset('uploads/products/' . $product->cover_image)
+                    ? asset('uploads/products/' . $product->cover_image)
                     : asset('uploads/products/default.png'),
-
             ];
         });
-
+    
         return response()->json($formatted);
     }
+    
 
 
     public function getDailySummaries()
