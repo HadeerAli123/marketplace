@@ -309,6 +309,14 @@ class ProductController extends Controller
             return response()->json(['error' => 'Failed to update product: ' . $e->getMessage()], 500);
         }
     }
+    public function destroy(Product $product)
+    {
+        if (!$product) {
+            return response()->json(['message' => 'Product not found.'], 404);
+        }
+        $product->delete();
+        return response()->json(['message' => 'Product soft deleted successfully.']);
+    }
 }
 
   // public function show(Product $product)
@@ -339,14 +347,7 @@ class ProductController extends Controller
     // }
 
 
-        // public function destroy(Product $product)
-        // {
-        //     if (!$product) {
-        //         return response()->json(['message' => 'Product not found.'], 404);
-        //     }
-        //     $product->delete();
-        //     return response()->json(['message' => 'Product soft deleted successfully.']);
-        // }
+       
         
     // public function restore($product_id)
     // {
