@@ -43,7 +43,35 @@ class ProductController extends Controller
     }
 
 
-
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+    
+        if (!$query) {
+            return response()->json(['message' => 'Please provide a search query.'], 400);
+        }
+    
+        $products = Product::with('category')
+            ->where('product_name', 'LIKE', "%{$query}%")
+            ->orWhere('description', 'LIKE', "%{$query}%")
+            ->get();
+    
+        $formatted = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'product_name' => $product->product_name,
+                'price' => $product->price,
+                'stock' => $product->stock,
+                'category_name' => $product->category?->category_name,
+                'image' => $product->cover_image
+                    ? asset('uploads/products/' . $product->cover_image)
+                    : asset('uploads/products/default.png'),
+            ];
+        });
+    
+        return response()->json($formatted);
+    }
+    
     
     public function getProductsByCategory($categoryId, Request $request)
    
