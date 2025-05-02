@@ -62,6 +62,7 @@ class ProductController extends Controller
                 'product_name' => $product->product_name,
                 'price' => $product->price,
                 'stock' => $product->stock,
+                'regular_price' => $product->regular_price,
                 'category_name' => $product->category?->category_name,
                 'image' => $product->cover_image
                     ? asset('uploads/products/' . $product->cover_image)
@@ -96,6 +97,7 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'product_name' => $product->product_name,
                     'price' => $price,
+                    'regular_price' => $product->regular_price,
                     'stock' => $product->stock,
                     'description' => $product->description,
                     'cover_image' => asset('uploads/products/' . $product->cover_image),
