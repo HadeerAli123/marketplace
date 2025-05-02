@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('deliveries', function (Blueprint $table) {
-            $table->dropColumn('status');
-        });
+        // Schema::table('deliveries', function (Blueprint $table) {
+        //     $table->dropColumn('status');
+        // });
 
         DB::statement("ALTER TABLE orders MODIFY last_status ENUM('canceled', 'shipped', 'processing', 'delivered','awaiting_price_confirmation') DEFAULT 'processing'");
     
