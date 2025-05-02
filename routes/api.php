@@ -33,11 +33,11 @@ Route::get('products/search', [ProductController::class, 'search']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('edit-profile', [AuthController::class, 'editProfile']);
         Route::get('categories', [AdminDashbordController::class, 'getCategories']);
+        Route::get('customer/get-profile', [AuthController::class, 'show']);
 
 
       // For Customers
     Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
-        Route::get('customer/get-profile', [AuthController::class, 'show']);
     });
 
     // For Drivers
