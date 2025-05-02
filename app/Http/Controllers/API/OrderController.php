@@ -102,7 +102,7 @@ public function createOrder(Request $request)
     $userId = auth()->id();
 
     $cart = Cart::where('user_id', $userId)
-                ->where('status', 'pending')
+                ->where('status', 'processing')
                 ->with(['items' => function ($query) {
                     $query->select('id', 'cart_id', 'product_id', 'quantity', 'price')
                           ->with(['product' => function ($q) {
@@ -857,7 +857,7 @@ public function confirmawaitCart(Request $request)
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,canceled,shipped,processing,delivered',
+            'status' => 'required|in:canceled,shipped,processing,delivered',
         ]);
 
         $order = Order::find($id);

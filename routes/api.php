@@ -40,21 +40,19 @@ Route::get('products/search', [ProductController::class, 'search']);
     Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
     });
 
-    // For Drivers
-    Route::middleware(['auth:sanctum', DriverMiddleware::class])->group(function () {
-        Route::get('driver/get-profile', [AuthController::class, 'show']);
-    });
 
     // For Admins
     Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
         Route::get('admin/get-profile', [AuthController::class, 'show']);
     });
 
-
+    // For Drivers
         Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
             Route::get('/available-for-delivery', [DeliveryController::class, 'getAvailableOrdersForDelivery']);
             Route::get('/get-My-orders', [DeliveryController::class, 'getMyDeliveries']);
             Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
+            Route::get('driver/get-profile', [AuthController::class, 'show']);
+            Route::post('accept-order/{order}', [DeliveryController::class, 'acceptOrder']);
         });
         Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
             Route::get('/admin/dashboard', function () {
