@@ -136,6 +136,8 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'product_name' => $product->product_name,
                     'price' => $price,
+                    'stock' => $product->stock,
+                    'regular_price' => $product->regular_price,
                     'description' => $product->description,
                     'cover_image' => asset('uploads/products/' . $product->cover_image),
                     'category' => new CategoryResource($product->category),
@@ -160,6 +162,7 @@ class ProductController extends Controller
                 'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
                 'stock' => 'required|integer|min:0',
                 'category_id' => 'required|integer|exists:categories,id',
+                'regular_price' => 'nullable|numeric|min:0',
             ], [
                 'product_name.required' => 'Product name is required.',
                 'product_name.string' => 'Product name must be a string.',

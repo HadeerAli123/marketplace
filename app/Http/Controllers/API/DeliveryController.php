@@ -94,4 +94,20 @@ class DeliveryController extends Controller
         ]);
     }
 
+
+    public function cancelAcceptance($orderId)
+    {
+        $delivery = Delivery::where('order_id', $orderId)
+            ->where('driver_id', auth()->id())
+            ->first();
+
+        if (!$delivery) {
+            return response()->json(['status' => false, 'message' => 'Delivery not found or not assigned to you'], 404);
+        }
+
+        $delivery->delete();
+        
+        return response()->json(['status' => true, 'message' => 'Order acceptance has been cancelled']);
+    }
+
 }

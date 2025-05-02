@@ -246,6 +246,7 @@ class AdminDashbordController extends Controller
         $formatted = $products->map(function ($product) {
             return [
                 'price' => $product->price,
+                'regular_price' => $product->regular_price,
                 'category_name' => $product->category?->category_name,
                 'id' => $product->id,
                 'product_name' => $product->product_name,
