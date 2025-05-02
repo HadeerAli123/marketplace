@@ -53,6 +53,7 @@ Route::get('products/search', [ProductController::class, 'search']);
             Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
             Route::get('driver/get-profile', [AuthController::class, 'show']);
             Route::post('accept-order/{order}', [DeliveryController::class, 'acceptOrder']);
+            Route::post('delivery/cancel-order/{orderId}', [DeliveryController::class, 'cancelAcceptance']);
         });
         Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
             Route::get('/admin/dashboard', function () {
@@ -101,10 +102,10 @@ Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
     // Route::get('/products/deleted', [ProductController::class, 'getAlldeleted']);
     // Route::get('/products/restore/{product_id}',[ProductController::class, 'restore']);
 });
+Route::get('/products/details/{id}', [ProductController::class, 'productDetails']);
 
 Route::apiResource('products', ProductController::class)->only([ 'index']);
 Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
-    Route::get('/products/details/{id}', [ProductController::class, 'productDetails']);
     Route::get('/products/byCategory/{categoryId}', [ProductController::class, 'getProductsByCategory']);
 });
 
