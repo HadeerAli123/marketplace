@@ -28,11 +28,11 @@ Route::post('forgot-password/send-otp', [AuthController::class, 'sendOtpForPassw
 Route::post('forgot-password/verify-otp', [AuthController::class, 'verifyResetOtp']);
 Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
 Route::get('products/search', [ProductController::class, 'search']);
+Route::get('categories', [AdminDashbordController::class, 'getCategories']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('edit-profile', [AuthController::class, 'editProfile']);
-        Route::get('categories', [AdminDashbordController::class, 'getCategories']);
         Route::get('customer/get-profile', [AuthController::class, 'show']);
 
 
