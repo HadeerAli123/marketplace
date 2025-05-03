@@ -34,7 +34,7 @@ class ProductController extends Controller
                 'cover_image' => asset('uploads/products/' . $product->cover_image),
                 'images' => ProductImageResource::collection($product->images),
                 'description' => $product->description,
-                'category' => new CategoryResource($product->category->only('id', 'category_name')),
+                'category' => new CategoryResource($product->category),
                 'price' => $isSpotModeActive ? $product->price : $product->regular_price,
             ];
         });
