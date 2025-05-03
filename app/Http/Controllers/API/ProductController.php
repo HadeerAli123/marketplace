@@ -32,6 +32,7 @@ class ProductController extends Controller
                 'product_name' => $product->product_name,
                 'stock' => $product->stock,
                 'cover_image' => asset('uploads/products/' . $product->cover_image),
+                'images' => ProductImageResource::collection($product->images),
                 'price' => $isSpotModeActive ? $product->price : $product->regular_price,
             ];
         });
