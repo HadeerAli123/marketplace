@@ -33,6 +33,8 @@ class ProductController extends Controller
                 'stock' => $product->stock,
                 'cover_image' => asset('uploads/products/' . $product->cover_image),
                 'images' => ProductImageResource::collection($product->images),
+                'description' => $product->description,
+                'category' => new CategoryResource($product->category->only('id', 'category_name')),
                 'price' => $isSpotModeActive ? $product->price : $product->regular_price,
             ];
         });
