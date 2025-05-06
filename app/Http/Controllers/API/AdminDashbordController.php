@@ -30,7 +30,6 @@ class AdminDashbordController extends Controller
 
         foreach ($drivers as $driver) {
             $deliveries = $driver->deliveries()
-                ->where('status', 'delivered')
                 ->with('order.orderItems')
                 ->get();
 
