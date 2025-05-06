@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\UsersAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class UserAddressesController extends Controller
 {
@@ -67,16 +68,26 @@ class UserAddressesController extends Controller
         ], 201);
     }
 
-    public function show($id)
-    {
+
+public function show($id)
+{
+    try {
         $user = Auth::user();
+
         $address = UsersAddress::where('user_id', $user->id)->findOrFail($id);
 
         return response()->json([
             'status' => 'success',
             'data' => $address,
         ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Address not found',
+        ], 404);
     }
+}
+
 
     public function update(Request $request, $id)
     {
