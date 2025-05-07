@@ -102,17 +102,20 @@ class NotificationController extends Controller
     {
         $request->validate([
             'fcm_token' => 'required|string',
+            'device_id' => 'nullable|string',
         ]);
-
+    
         $user = Auth::user();
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
-
+    
         $user->fcm_token = $request->fcm_token;
+        $user->device_id = $request->device_id;
         $user->save();
-
-        return response()->json(['message' => 'FCM token updated successfully.']);
+    
+        return response()->json(['message' => 'FCM token and device ID updated successfully.']);
     }
+    
 
 }
