@@ -32,6 +32,8 @@ class AuthController extends Controller
             'email' => 'nullable|email|unique:users,email',
             'secondary_email' => 'nullable|email|unique:users,secondary_email',
             'fcm_token' => 'nullable|string',
+            'device_id' => 'nullable|string',
+
         ]);
 
         $imagePath = null;
@@ -53,6 +55,7 @@ class AuthController extends Controller
             'image' => $imagePath,
             'status' => 'inactive',
             'fcm_token' => $request->fcm_token,
+            'device_id' => $request->device_id,
 
         ]);
         
@@ -150,6 +153,7 @@ class AuthController extends Controller
             'phone' => 'required|string',
             'password' => 'required|string',
             'fcm_token' => 'nullable|string',
+            'device_id' => 'nullable|string',
 
         ]);
 
@@ -167,6 +171,10 @@ class AuthController extends Controller
 
         if ($request->filled('fcm_token')) {
             $user->fcm_token = $request->fcm_token;
+            $user->save();
+        }
+        if ($request->filled('device_id')) {
+            $user->device_id = $request->device_id;
             $user->save();
         }
 
