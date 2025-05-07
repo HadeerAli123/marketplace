@@ -39,12 +39,19 @@ class SpotModeController extends Controller
             ]);
 
             if ($status === 'active') {
-      
-                $carts = Cart::where('status', 'pending')->with('items.product')->get();
+                $carts = Cart::where('status', 'pending')
+                    ->with(['items.product' => function ($query) {
+                        $query->whereNull('deleted_at'); // جيب بس المنتجات اللي مش محذوفة
+                    }])
+                    ->get();
                 foreach ($carts as $cart) {
                     foreach ($cart->items as $item) {
-                        $product = $item->product;
-                        $item->update(['price' => $product->price]); 
+                        if ($item->product && !$item->product->trashed()) { // لو المنتج موجود ومش محذوف
+                            $item->update(['price' => $item->product->price]);
+                        } else {
+                            \Log::warning("العنصر {$item->id} في الكارت مالهوش منتج أو محذوف.");
+                            $item->delete(); // امسح العنصر
+                        }
                     }
                     $cart->total_price = $cart->items->sum(function ($item) {
                         return $item->price * $item->quantity;
@@ -77,13 +84,20 @@ class SpotModeController extends Controller
         DB::beginTransaction();
         try {
             $spotMode->update(['status' => 'not_active']);
-            
 
-            $carts = Cart::where('status', 'pending')->with('items.product')->get();
+            $carts = Cart::where('status', 'pending')
+                ->with(['items.product' => function ($query) {
+                    $query->whereNull('deleted_at'); // جيب بس المنتجات اللي مش محذوفة
+                }])
+                ->get();
             foreach ($carts as $cart) {
                 foreach ($cart->items as $item) {
-                    $product = $item->product;
-                    $item->update(['price' => $product->regular_price]);
+                    if ($item->product && !$item->product->trashed()) { // لو المنتج موجود ومش محذوف
+                        $item->update(['price' => $item->product->regular_price]);
+                    } else {
+                        \Log::warning("العنصر {$item->id} في الكارت مالهوش منتج أو محذوف.");
+                        $item->delete();
+                    }
                 }
                 $cart->total_price = $cart->items->sum(function ($item) {
                     return $item->price * $item->quantity;
