@@ -31,6 +31,7 @@ class AuthController extends Controller
             'image' => 'nullable|image',
             'email' => 'nullable|email|unique:users,email',
             'secondary_email' => 'nullable|email|unique:users,secondary_email',
+            'fcm_token' => 'nullable|string',
         ]);
 
         $imagePath = null;
@@ -51,6 +52,8 @@ class AuthController extends Controller
             'secondary_email' => $request->secondary_email,
             'image' => $imagePath,
             'status' => 'inactive',
+            'fcm_token' => $request->fcm_token,
+
         ]);
         
         // $user->addresses()->createMany([
@@ -146,6 +149,8 @@ class AuthController extends Controller
         $request->validate([
             'phone' => 'required|string',
             'password' => 'required|string',
+            'fcm_token' => 'nullable|string',
+
         ]);
 
         if (!Auth::attempt(['phone' => $request->phone, 'password' => $request->password])) {
@@ -159,6 +164,13 @@ class AuthController extends Controller
                 'message' => 'Account is not activated. Please verify your OTP.',
             ], 403);
         }
+
+        if ($request->filled('fcm_token')) {
+            $user->fcm_token = $request->fcm_token;
+            $user->save();
+        }
+
+        
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['message' => 'Login successful', 'token' => $token,'user' => new UserResource($user),]);
