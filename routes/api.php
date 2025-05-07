@@ -17,12 +17,18 @@ use App\Http\Controllers\API\ContactUsController;
 use App\Http\Controllers\API\UserAddressesController;
 use App\Http\Controllers\API\SpotModeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotificationController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->delete('delete-account', [AuthController::class, 'deleteAccount']);
 Route::middleware('auth:sanctum')->post('change-password', [AuthController::class, 'changePassword']);
+
+Route::post('notifications/all', [NotificationController::class, 'sendToAllUsers']);
+Route::post('notifications/customer', [NotificationController::class, 'sendToCustomer']);
+Route::post('notifications/driver', [NotificationController::class, 'sendToDriver']);
+Route::middleware('auth:sanctum')->post('update-fcm-token', [NotificationController::class, 'updateFcmToken']);
 
 Route::post('forgot-password/send-otp', [AuthController::class, 'sendOtpForPasswordReset']);
 Route::post('forgot-password/verify-otp', [AuthController::class, 'verifyResetOtp']);
