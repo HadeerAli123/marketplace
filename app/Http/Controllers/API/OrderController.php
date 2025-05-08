@@ -20,7 +20,7 @@ class OrderController extends Controller
     
     ///////////////////////////////////////////////testok
     
-  public function index()
+public function index()
     {
         $userId = auth()->id();
 
@@ -32,7 +32,9 @@ class OrderController extends Controller
                                      $q->select('id', 'product_name');
                                  }]);
                        }])
-                       ->orderBy('date', 'desc') 
+                       ->orderBy('date', 'desc')
+                       ->orderBy('created_at', 'desc') 
+                       ->orderBy('id', 'desc') 
                        ->get();
 
         $orderDetails = $orders->map(function ($order) {
@@ -567,7 +569,9 @@ public function createOrder(Request $request)
                 $query->where('last_status', $mappedStatus);
             }
 
-            $orders = $query->get();
+            $orders = $query->orderBy('created_at', 'desc') 
+                            ->orderBy('id', 'desc') 
+                            ->get();
 
             return response()->json([
                 'message' => ucfirst($status) . ' orders retrieved successfully',
@@ -600,7 +604,6 @@ public function createOrder(Request $request)
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
     private function calculateEstimatedArrival($order)
     {
         if ($order->last_status === 'canceled') {
