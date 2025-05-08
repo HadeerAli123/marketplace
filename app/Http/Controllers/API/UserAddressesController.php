@@ -69,30 +69,30 @@ class UserAddressesController extends Controller
     }
 
 
-public function show($id)
-{
-    try {
-        $user = Auth::user();
+    public function show($id)
+    {
+        try {
+            $user = Auth::user();
 
-        $address = UsersAddress::where('user_id', $user->id)->where('id', $id)->firstOrFail();
+            $address = UsersAddress::where('user_id', $user->id);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $address,
-        ], 200);
-    } catch (ModelNotFoundException $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Address not found',
-        ], 404);
+            return response()->json([
+                'status' => 'success',
+                'data' => $address,
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Address not found',
+            ], 404);
+        }
     }
-}
 
 
     public function update(Request $request, $id)
     {
         $user = Auth::user();
-        $address = UsersAddress::where('user_id', $user->id)->findOrFail($id);
+        $address = UsersAddress::where('user_id', $user->id)->where('id', $id)->firstOrFail();
 
         $request->validate([
             'country' => 'nullable|string',
