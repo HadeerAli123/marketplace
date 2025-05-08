@@ -35,7 +35,6 @@ class NotificationController extends Controller
         return response()->json(['message' => 'Notification sent to all users']);
     }
 
-    // Send to specific customer
     public function sendToCustomer(Request $request)
     {
         $request->validate([
@@ -61,7 +60,36 @@ class NotificationController extends Controller
         return response()->json(['message' => 'Notification sent to customer']);
     }
 
-    // Send to specific driver
+    public function sendToAllCustomer(Request $request)
+    {
+        $request->validate([
+            'title'   => 'required|string',
+            'body'    => 'required|string',
+        ]);
+
+        $users = User::where('role', 'customer')->whereNotNull('fcm_token')->get();
+
+        if ($users->isEmpty()) {
+            return response()->json(['message' => 'No customers found with FCM tokens'], 404);
+        }
+
+        $tokens = $users->pluck('fcm_token')->toArray();
+
+        $this->sendFCM($tokens, $request->title, $request->body);
+
+        foreach ($users as $user) {
+            Notification::create([
+                'title'   => $request->title,
+                'body'    => $request->body,
+                'user_id' => $user->id,
+                'is_read' => false,
+            ]);
+        }
+
+        return response()->json(['message' => 'Notification sent to all customers']);
+    }
+
+
     public function sendToDriver(Request $request)
     {
         $request->validate([
@@ -87,7 +115,35 @@ class NotificationController extends Controller
         return response()->json(['message' => 'Notification sent to driver']);
     }
 
-    // Helper method to send via FCM
+    public function sendToAllDrivers(Request $request)
+    {
+        $request->validate([
+            'title'   => 'required|string',
+            'body'    => 'required|string',
+        ]);
+
+        $users = User::where('role', 'driver')->whereNotNull('fcm_token')->get();
+
+        if ($users->isEmpty()) {
+            return response()->json(['message' => 'No customers found with FCM tokens'], 404);
+        }
+
+        $tokens = $users->pluck('fcm_token')->toArray();
+
+        $this->sendFCM($tokens, $request->title, $request->body);
+
+        foreach ($users as $user) {
+            Notification::create([
+                'title'   => $request->title,
+                'body'    => $request->body,
+                'user_id' => $user->id,
+                'is_read' => false,
+            ]);
+        }
+
+        return response()->json(['message' => 'Notification sent to all drivers']);
+    }
+
     private function sendFCM($token, $title, $body)
     {
         $messaging = Firebase::messaging();
