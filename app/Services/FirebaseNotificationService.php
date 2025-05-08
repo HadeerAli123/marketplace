@@ -30,8 +30,8 @@ class FirebaseNotificationService
         $payload = [
             'to' => $token,
             'notification' => [
-                // 'title' => $title,
-                // 'body' => $body,
+                'title' => $title,
+                'body' => $body,
                 'sound' => 'default',
             ],
         'data' => [
