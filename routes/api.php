@@ -58,6 +58,7 @@ Route::get('categories', [AdminDashbordController::class, 'getCategories']);
     // For Admins
     Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
         Route::get('admin/get-profile', [AuthController::class, 'show']);
+        Route::get('notifications/insights', [NotificationController::class, 'getInsights']);
     });
 
     // For Drivers

@@ -154,4 +154,20 @@ class NotificationController extends Controller
         return response()->json(['message' => 'All notifications marked as read.']);
     }
 
+    public function getInsights()
+    {
+        $totalSentToday = Notification::whereDate('created_at', now()->toDateString())->count();
+
+        $readCount = Notification::where('is_read', true)->count();
+
+        $unreadCount = Notification::where('is_read', false)->count();
+
+        return response()->json([
+            'sent_today'   => $totalSentToday,
+            'read'         => $readCount,
+            'unread'       => $unreadCount,
+        ]);
+    }
+
+
 }
