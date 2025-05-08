@@ -29,7 +29,7 @@ Route::post('notifications/all', [NotificationController::class, 'sendToAllUsers
 Route::post('notifications/customer', [NotificationController::class, 'sendToCustomer']);
 Route::post('notifications/driver', [NotificationController::class, 'sendToDriver']);
 Route::post('notifications/all-customer', [NotificationController::class, 'sendToAllCustomer']);
-Route::post('notifications/all-driver', [NotificationController::class, 'sendToAllDriver']);
+Route::post('notifications/all-driver', [NotificationController::class, 'sendToAllDrivers']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('notifications', [NotificationController::class, 'index']);
