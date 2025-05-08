@@ -17,9 +17,7 @@ class CartItemsController extends Controller
         try {
             $cart = Cart::where('user_id', Auth::id())
                         ->where('status', 'pending')
-                        ->with(['items.product' => function ($query) {
-                            $query->whereNull('deleted_at');
-                        }])
+                        ->with('items.product')
                         ->first();
     
             if (!$cart || $cart->items->isEmpty()) {
@@ -29,46 +27,43 @@ class CartItemsController extends Controller
             $isSpotModeActive = SpotMode::isActive();
     
             $cartItems = $cart->items->map(function ($item) use ($isSpotModeActive) {
-                if ($item->product) {
-                    $price = $isSpotModeActive ? $item->product->price : $item->product->regular_price;
-                    return [
-                        'id' => $item->id,
-                        'cart_id' => $item->cart_id,
-                        'product_id' => $item->product_id,
-                        'product_name' => $item->product->product_name,
-                        'quantity' => $item->quantity,
-                        'price' => $price,
-                        'total' => $price * $item->quantity,
-                        'cover_image' => $item->product->cover_image ? asset('Uploads/products/' . $item->product->cover_image) : 'No image available',
-                    ];
-                }
-                return null; 
-            })->filter();
-    
-            if ($cartItems->isEmpty()) {
-                return response()->json(['message' => 'No valid items in the cart'], 200);
-            }
+                $price = $isSpotModeActive ? $item->product->price : $item->product->regular_price;
+                return [
+                    'id' => $item->id,
+                    'cart_id' => $item->cart_id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product->product_name,
+                    'quantity' => $item->quantity,
+                    'price' => $price,
+                    'total' => $price * $item->quantity,
+                    'cover_image' => $item->product->cover_image ? asset('uploads/products/' . $item->product->cover_image) : 'No image available',
+                ];
+            });
     
             return response()->json([
                 'message' => 'Cart items retrieved successfully',
-                'data' => $cartItems->values(),
+                'data' => $cartItems,
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
+
     public function store(Request $request)
     {
         $userId = Auth::id();
     
-        // التأكد من وجود كارت pending
         $cart = Cart::where('user_id', $userId)
                     ->where('status', 'pending')
                     ->first();
     
         if (!$cart) {
-            return response()->json(['error' => 'No pending cart found. Please create a cart first.'], 400);
+            $cart = Cart::create([
+                'user_id' => $userId,
+                'status' => 'pending',
+                'total_price' => 0,
+            ]);
         }
     
         $request->validate([
@@ -76,12 +71,12 @@ class CartItemsController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
     
-        $product = Product::where('id', $request->product_id)
-                          ->whereNull('deleted_at')
-                          ->first();
+
+        $product = Product::find($request->product_id);
         if (!$product) {
-            return response()->json(['error' => 'Product not found or has been deleted'], 404);
+            return response()->json(['error' => 'Product not found'], 404);
         }
+    
     
         if ($product->stock < $request->quantity) {
             return response()->json(['error' => 'The requested quantity exceeds the available stock'], 400);
@@ -132,33 +127,27 @@ class CartItemsController extends Controller
         ], 201);
     }
     
+    
     public function update(Request $request, $id)
     {
-        $userId = Auth::id();
-    
-        // التأكد من وجود كارت pending
-        $cart = Cart::where('user_id', $userId)
-                    ->where('status', 'pending')
-                    ->first();
-    
-        if (!$cart) {
-            return response()->json(['error' => 'No pending cart found'], 400);
-        }
-    
         $cartItem = CartItem::where('id', $id)
-                            ->where('cart_id', $cart->id)
+                            ->whereHas('cart', function ($query) {
+                                $query->where('user_id', Auth::id());
+                            })
                             ->firstOrFail();
+    
+        if ($cartItem->cart->status !== 'pending') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot update cart item. The cart must be in pending status.',
+            ], 403);
+        }
     
         $request->validate([
             'quantity' => 'required|integer|min:1',
         ]);
     
-        $product = Product::where('id', $cartItem->product_id)
-                          ->whereNull('deleted_at')
-                          ->first();
-        if (!$product) {
-            return response()->json(['error' => 'Product not found or has been deleted'], 404);
-        }
+        $product = $cartItem->product;
     
         $quantityDifference = $request->quantity - $cartItem->quantity;
         if ($quantityDifference > 0 && $quantityDifference > $product->stock) {
@@ -173,6 +162,7 @@ class CartItemsController extends Controller
             'price' => $price,
         ]);
     
+        $cart = $cartItem->cart;
         $cart->total_price = $cart->items->sum(function ($item) {
             return $item->price * $item->quantity;
         });
@@ -194,28 +184,27 @@ class CartItemsController extends Controller
 
     public function destroy($id)
     {
-        $userId = Auth::id();
-    
-        // التأكد من وجود كارت pending
-        $cart = Cart::where('user_id', $userId)
-                    ->where('status', 'pending')
-                    ->first();
-    
-        if (!$cart) {
-            return response()->json(['error' => 'No pending cart found'], 400);
-        }
-    
         $cartItem = CartItem::where('id', $id)
-                            ->where('cart_id', $cart->id)
+                            ->whereHas('cart', function ($query) {
+                                $query->where('user_id', Auth::id());
+                            })
                             ->firstOrFail();
-    
+
+        if ($cartItem->cart->status !== 'pending') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot delete cart item. The cart must be in pending status.',
+            ], 403);
+        }
+
+        $cart = $cartItem->cart;
         $cartItem->delete();
-    
+
         $cart->total_price = $cart->items->sum(function ($item) {
             return $item->price * $item->quantity;
         });
         $cart->save();
-    
+
         return response()->json([
             'message' => 'Product removed from cart successfully',
         ], 200);
