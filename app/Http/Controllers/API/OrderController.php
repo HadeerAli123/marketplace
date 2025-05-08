@@ -20,7 +20,7 @@ class OrderController extends Controller
     
     ///////////////////////////////////////////////testok
     
-  public function index()
+public function index()
     {
         $userId = auth()->id();
 
@@ -32,7 +32,9 @@ class OrderController extends Controller
                                      $q->select('id', 'product_name');
                                  }]);
                        }])
-                       ->orderBy('date', 'desc') 
+                       ->orderBy('date', 'desc')
+                       ->orderBy('created_at', 'desc') 
+                       ->orderBy('id', 'desc') 
                        ->get();
 
         $orderDetails = $orders->map(function ($order) {
