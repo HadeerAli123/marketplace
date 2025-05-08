@@ -47,6 +47,7 @@ Route::get('categories', [AdminDashbordController::class, 'getCategories']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('edit-profile', [AuthController::class, 'editProfile']);
         Route::get('customer/get-profile', [AuthController::class, 'show']);
+        Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
 
 
       // For Customers
@@ -63,7 +64,6 @@ Route::get('categories', [AdminDashbordController::class, 'getCategories']);
         Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
             Route::get('/available-for-delivery', [DeliveryController::class, 'getAvailableOrdersForDelivery']);
             Route::get('/get-My-orders', [DeliveryController::class, 'getMyDeliveries']);
-            Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
             Route::get('driver/get-profile', [AuthController::class, 'show']);
             Route::post('accept-order/{order}', [DeliveryController::class, 'acceptOrder']);
             Route::post('delivery/cancel-order/{orderId}', [DeliveryController::class, 'cancelAcceptance']);
