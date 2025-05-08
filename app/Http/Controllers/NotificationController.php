@@ -29,6 +29,7 @@ class NotificationController extends Controller
                 'title'   => $request->title,
                 'body'    => $request->body,
                 'user_id' => $user->id,
+                'is_read' => false,
             ]);
         }
 
@@ -69,15 +70,13 @@ class NotificationController extends Controller
 
         $users = User::where('role', 'customer')->whereNotNull('fcm_token')->get();
 
+     
         if ($users->isEmpty()) {
             return response()->json(['message' => 'No customers found with FCM tokens'], 404);
         }
 
-        $tokens = $users->pluck('fcm_token')->toArray();
-
-        $this->sendFCM($tokens, $request->title, $request->body);
-
         foreach ($users as $user) {
+            $this->sendFCM($user->fcm_token, $request->title, $request->body);
             Notification::create([
                 'title'   => $request->title,
                 'body'    => $request->body,
@@ -85,6 +84,18 @@ class NotificationController extends Controller
                 'is_read' => false,
             ]);
         }
+        // $tokens = $users->pluck('fcm_token')->toArray();
+
+        // $this->sendFCM($tokens, $request->title, $request->body);
+
+        // foreach ($users as $user) {
+        //     Notification::create([
+        //         'title'   => $request->title,
+        //         'body'    => $request->body,
+        //         'user_id' => $user->id,
+        //         'is_read' => false,
+        //     ]);
+        // }
 
         return response()->json(['message' => 'Notification sent to all customers']);
     }
@@ -124,15 +135,15 @@ class NotificationController extends Controller
 
         $users = User::where('role', 'driver')->whereNotNull('fcm_token')->get();
 
+        
+      
+
         if ($users->isEmpty()) {
             return response()->json(['message' => 'No customers found with FCM tokens'], 404);
         }
 
-        $tokens = $users->pluck('fcm_token')->toArray();
-
-        $this->sendFCM($tokens, $request->title, $request->body);
-
         foreach ($users as $user) {
+            $this->sendFCM($user->fcm_token, $request->title, $request->body);
             Notification::create([
                 'title'   => $request->title,
                 'body'    => $request->body,
@@ -140,6 +151,19 @@ class NotificationController extends Controller
                 'is_read' => false,
             ]);
         }
+        
+        // $tokens = $users->pluck('fcm_token')->toArray();
+
+        // $this->sendFCM($tokens, $request->title, $request->body);
+
+        // foreach ($users as $user) {
+        //     Notification::create([
+        //         'title'   => $request->title,
+        //         'body'    => $request->body,
+        //         'user_id' => $user->id,
+        //         'is_read' => false,
+        //     ]);
+        // }
 
         return response()->json(['message' => 'Notification sent to all drivers']);
     }
