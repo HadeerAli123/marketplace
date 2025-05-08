@@ -31,15 +31,17 @@ class FirebaseNotificationService
             'to' => $token,
             'notification' => [
                 'title' => $title,
-                'body' => $body,
+                'body'  => $body,
                 'sound' => 'default',
             ],
-        'data' => [
-            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-            'status' => 'done',
-            'title' => $title,
-            'body' => $body,        ],
+            'data' => [
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                'title' => $title,
+                'body' => $body,
+                'status' => 'done',
+            ],
         ];
+        
 
         $response = Http::withHeaders([
             'Authorization' => 'key=' . $this->serverKey,
