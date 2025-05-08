@@ -117,5 +117,40 @@ class NotificationController extends Controller
         return response()->json(['message' => 'FCM token and device ID updated successfully.']);
     }
     
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+    
+        $notifications = $user->notifications()
+            ->latest()
+            ->get();
+    
+        return response()->json([
+            'notifications' => $notifications
+        ]);
+    }
+
+    public function markAsRead($notificationId)
+    {
+        $user = Auth::user();
+
+        $notification = $user->notifications()->where('id', $notificationId)->first();
+
+        if (!$notification) {
+            return response()->json(['message' => 'Notification not found.'], 404);
+        }
+
+        $notification->update(['is_read' => true]);
+
+        return response()->json(['message' => 'Notification marked as read.']);
+    }
+    public function markAllAsRead()
+    {
+        $user = Auth::user();
+
+        $user->notifications()->update(['is_read' => true]);
+
+        return response()->json(['message' => 'All notifications marked as read.']);
+    }
 
 }

@@ -28,6 +28,12 @@ Route::middleware('auth:sanctum')->post('change-password', [AuthController::clas
 Route::post('notifications/all', [NotificationController::class, 'sendToAllUsers']);
 Route::post('notifications/customer', [NotificationController::class, 'sendToCustomer']);
 Route::post('notifications/driver', [NotificationController::class, 'sendToDriver']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::patch('notifications/read/{notification}', [NotificationController::class, 'markAsRead']);
+});
+
 Route::middleware('auth:sanctum')->post('update-fcm-token', [NotificationController::class, 'updateFcmToken']);
 
 Route::post('forgot-password/send-otp', [AuthController::class, 'sendOtpForPasswordReset']);
