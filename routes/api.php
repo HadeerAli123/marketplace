@@ -31,7 +31,7 @@ Route::post('notifications/driver', [NotificationController::class, 'sendToDrive
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('notifications', [NotificationController::class, 'index']);
-    Route::patch('notifications/read/{notification}', [NotificationController::class, 'markAsRead']);
+    Route::put('notifications/read/{notification}', [NotificationController::class, 'markAsRead']);
 });
 
 Route::middleware('auth:sanctum')->post('update-fcm-token', [NotificationController::class, 'updateFcmToken']);

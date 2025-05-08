@@ -37,8 +37,8 @@ class FirebaseNotificationService
         'data' => [
             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
             'status' => 'done',
-'title' => $title,
-                'body' => $body,        ],
+            'title' => $title,
+            'body' => $body,        ],
         ];
 
         $response = Http::withHeaders([
