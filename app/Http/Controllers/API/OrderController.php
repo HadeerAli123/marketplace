@@ -538,7 +538,7 @@ public function createOrder(Request $request)
         ], 200);
     }
 
-  public function getOrdersByStatus(Request $request, $status)
+    public function getOrdersByStatus(Request $request, $status)
     {
         try {
             $statusMap = [
@@ -569,7 +569,8 @@ public function createOrder(Request $request)
                 $query->where('last_status', $mappedStatus);
             }
 
-            $orders = $query->orderBy('created_at', 'desc')
+            $orders = $query->orderBy('created_at', 'desc') 
+                            ->orderBy('id', 'desc') 
                             ->get();
 
             return response()->json([
@@ -603,7 +604,6 @@ public function createOrder(Request $request)
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
     private function calculateEstimatedArrival($order)
     {
         if ($order->last_status === 'canceled') {
