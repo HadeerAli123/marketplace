@@ -74,7 +74,7 @@ public function show($id)
     try {
         $user = Auth::user();
 
-        $address = UsersAddress::where('user_id', $user->id)->findOrFail($id);
+        $address = UsersAddress::where('user_id', $user->id)->where('id', $id)->firstOrFail();
 
         return response()->json([
             'status' => 'success',
