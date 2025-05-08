@@ -536,7 +536,7 @@ public function createOrder(Request $request)
         ], 200);
     }
 
-    public function getOrdersByStatus(Request $request, $status)
+  public function getOrdersByStatus(Request $request, $status)
     {
         try {
             $statusMap = [
@@ -567,7 +567,8 @@ public function createOrder(Request $request)
                 $query->where('last_status', $mappedStatus);
             }
 
-            $orders = $query->get();
+            $orders = $query->orderBy('created_at', 'desc')
+                            ->get();
 
             return response()->json([
                 'message' => ucfirst($status) . ' orders retrieved successfully',
