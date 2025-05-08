@@ -20,7 +20,7 @@ class OrderController extends Controller
     
     ///////////////////////////////////////////////testok
     
-    public function index()
+  public function index()
     {
         $userId = auth()->id();
 
@@ -32,6 +32,7 @@ class OrderController extends Controller
                                      $q->select('id', 'product_name');
                                  }]);
                        }])
+                       ->orderBy('date', 'desc') 
                        ->get();
 
         $orderDetails = $orders->map(function ($order) {
@@ -57,7 +58,6 @@ class OrderController extends Controller
             'orders' => $orderDetails,
         ], 200);
     }
-
 
 /////////////////////////////////////////////////////test ok
 public function createOrder(Request $request)
