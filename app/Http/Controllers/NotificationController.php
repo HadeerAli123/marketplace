@@ -134,13 +134,14 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
 
-        $notification = $user->notifications()->where('id', $notificationId)->first();
+        $notification = $user->notifications()->find($notificationId);
 
         if (!$notification) {
             return response()->json(['message' => 'Notification not found.'], 404);
         }
 
-        $notification->update(['is_read' => true]);
+        $notification->is_read = true;
+        $notification->save();
 
         return response()->json(['message' => 'Notification marked as read.']);
     }
