@@ -585,7 +585,7 @@ public function createOrder(Request $request)
                 $query->where('last_status', $mappedStatus);
             }
 
-            $orders = $query->orderBy('created_at', 'desc')
+            $orders = $query->orderBy('created_at', 'desc') 
                             ->orderBy('id', 'desc')
                             ->get();
 
@@ -598,7 +598,7 @@ public function createOrder(Request $request)
                     });
                     $response = [
                         'order_number' => $order->id,
-                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) : 'Not available',
+                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
                         'status' => $order->last_status,
                     ];
@@ -620,6 +620,7 @@ public function createOrder(Request $request)
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
     private function calculateEstimatedArrival($order)
     {
         if ($order->last_status === 'canceled') {
@@ -628,7 +629,7 @@ public function createOrder(Request $request)
 
         if ($order->last_status === 'delivered') {
             if ($order->delivery && $order->delivery->delivery_time) {
-                return 'Delivered on ' . $order->delivery->delivery_time->format('d/m/Y h:i A');
+                return $order->delivery->delivery_time->format('d/m/Y h:i A');
             }
             return 'Delivered';
         }
@@ -644,7 +645,7 @@ public function createOrder(Request $request)
                 return "Arriving in $remainingMinutes minutes";
             }
 
-            return 'Late';
+            return $estimatedDeliveryTime->format('d/m/Y h:i A');
         }
 
         return 'Unknown status';
