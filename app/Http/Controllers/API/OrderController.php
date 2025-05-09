@@ -33,9 +33,9 @@ public function updateStatus(Request $request, $id)
     ]);
 }
 
-    
+
     ///////////////////////////////////////////////testok
-    
+
 public function index()
     {
         $userId = auth()->id();
@@ -49,8 +49,8 @@ public function index()
                                  }]);
                        }])
                        ->orderBy('date', 'desc')
-                       ->orderBy('created_at', 'desc') 
-                       ->orderBy('id', 'desc') 
+                       ->orderBy('created_at', 'desc')
+                       ->orderBy('id', 'desc')
                        ->get();
 
         $orderDetails = $orders->map(function ($order) {
@@ -134,7 +134,7 @@ public function createOrder(Request $request)
         foreach ($cart->items as $cartItem) {
             $product = $cartItem->product;
 
-        
+
             if (!$product) {
                 throw new \Exception('Product with ID ' . $cartItem->product_id . ' not found');
             }
@@ -284,18 +284,18 @@ public function createOrder(Request $request)
     //     $order = Order::where('id', $orderId)
     //                   ->where('user_id', auth()->id())
     //                   ->firstOrFail();
-    
+
     //     if ($order->last_status !== 'pending') {
     //         return response()->json(['error' => 'Order already processed'], 403);
     //     }
-    
+
     //     DB::beginTransaction();
-    
+
     //     try {
     //         $order->update(['last_status' => 'processing']);
-    
+
     //         DB::commit();
-    
+
     //         return response()->json([
     //             'message' => 'Order confirmed successfully',
     //             'order_id' => $order->id,
@@ -320,8 +320,8 @@ public function createOrder(Request $request)
     //         return response()->json(['message' => 'No orders to assign'], 200);
     //     }
 
-    //     $driverId = $request->input('driver_id'); 
-    //     $assignToAll = is_null($driverId); 
+    //     $driverId = $request->input('driver_id');
+    //     $assignToAll = is_null($driverId);
 
     //     if (!$assignToAll) {
     //         $driver = User::where('role', 'driver')->find($driverId);
@@ -391,19 +391,19 @@ public function createOrder(Request $request)
     // {
     //     try {
     //         $driver = Auth::user();
-    
+
     //         $order = Order::findOrFail($orderId);
     //         if ($order->last_status !== 'shipped') {
     //             return response()->json(['error' => 'Order cannot be accepted at this stage'], 403);
     //         }
-    
+
     //         $existingDelivery = Delivery::where('order_id', $orderId)->first();
-    
+
     //         if ($existingDelivery) {
     //             if ($existingDelivery->driver_id !== $driver->id) {
     //                 return response()->json(['error' => 'Order already assigned to another driver'], 403);
     //             }
-    
+
     //             $existingDelivery->update([
     //                 'status' => 'in_progress',
     //             ]);
@@ -415,12 +415,12 @@ public function createOrder(Request $request)
     //                 'address' => $order->user->address,
     //             ]);
     //         }
-    
+
     //         $admin = User::where('role', 'admin')->first();
     //         if ($admin) {
     //             $admin->notify(new OrderAssignedNotification($order, $driver));
     //         }
-    
+
     //         return response()->json(['message' => 'Order accepted successfully'], 200);
     //     } catch (\Exception $e) {
     //         return response()->json(['error' => $e->getMessage()], 500);
@@ -456,7 +456,7 @@ public function createOrder(Request $request)
     //     }
     // }
 
-   
+
     // public function getDriverOrders()
 
     // {
@@ -494,7 +494,7 @@ public function createOrder(Request $request)
     public function show(string $id)
     {
         $userId = auth()->id();
-    
+
         $order = Order::where('id', $id)
                       ->where('user_id', $userId)
                       ->with(['items' => function ($query) {
@@ -509,29 +509,29 @@ public function createOrder(Request $request)
                                 }]);
                       }])
                       ->first();
-    
+
         if (!$order) {
             return response()->json(['error' => 'Order not found'], 404);
         }
-    
+
         $shippingAddress = UsersAddress::where('user_id', $userId)
                                        ->where('type', 'shipping')
                                        ->first();
-    
+
         if (!$shippingAddress) {
             return response()->json(['error' => 'No shipping address found for this user'], 400);
         }
-    
+
         $orderDetails = [
             'order_id' => $order->id,
             'date' => $order->date,
             'status' => $order->last_status,
             'shipping_address' => $shippingAddress->address,
-            'delivery_man' => $order->delivery && $order->delivery->driver 
-                ? ($order->delivery->driver->first_name . ' ' . $order->delivery->driver->last_name) 
+            'delivery_man' => $order->delivery && $order->delivery->driver
+                ? ($order->delivery->driver->first_name . ' ' . $order->delivery->driver->last_name)
                 : 'Not assigned',
-            'delivery_man_phone' => $order->delivery && $order->delivery->driver 
-                ? $order->delivery->driver->phone 
+            'delivery_man_phone' => $order->delivery && $order->delivery->driver
+                ? $order->delivery->driver->phone
                 : 'Not available',
             'delivery_fee' => $order->delivery ? $order->delivery->delivery_fee : 'Not available',
             'items' => $order->items->map(function ($item) {
@@ -546,7 +546,7 @@ public function createOrder(Request $request)
                 return $item->price * $item->quantity;
             }),
         ];
-    
+
         return response()->json([
             'status' => 'success',
             'message' => 'Order details retrieved successfully',
@@ -585,8 +585,8 @@ public function createOrder(Request $request)
                 $query->where('last_status', $mappedStatus);
             }
 
-            $orders = $query->orderBy('created_at', 'desc') 
-                            ->orderBy('id', 'desc') 
+            $orders = $query->orderBy('created_at', 'desc')
+                            ->orderBy('id', 'desc')
                             ->get();
 
             return response()->json([
@@ -598,7 +598,7 @@ public function createOrder(Request $request)
                     });
                     $response = [
                         'order_number' => $order->id,
-                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
+                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
                         'status' => $order->last_status,
                     ];
