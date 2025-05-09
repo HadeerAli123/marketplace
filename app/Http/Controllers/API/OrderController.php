@@ -629,7 +629,7 @@ public function createOrder(Request $request)
 
         if ($order->last_status === 'delivered') {
             if ($order->delivery && $order->delivery->delivery_time) {
-                return round($order->delivery->delivery_time->format('d/m/Y h:i A'), 2);
+                return $order->delivery->delivery_time->format('d/m/Y h:i A');
             }
             return 'Delivered';
         }
@@ -641,11 +641,11 @@ public function createOrder(Request $request)
             $now = now();
 
             if ($now->lessThan($estimatedDeliveryTime)) {
-                $remainingMinutes = round($now->diffInMinutes($estimatedDeliveryTime), 2);
-                return  $remainingMinutes ;
+                $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
+                return " $remainingMinutes minutes";
             }
 
-            return round($estimatedDeliveryTime->format('d/m/Y h:i A'), 2);
+            return $estimatedDeliveryTime->format('d/m/Y h:i A');
         }
 
         return 'Unknown status';
