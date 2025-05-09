@@ -32,6 +32,9 @@ class OrderController extends Controller
                                      $q->select('id', 'product_name');
                                  }]);
                        }])
+                       ->orderBy('date', 'desc') // الترتيب الأساسي بناءً على date
+                       ->orderBy('created_at', 'desc') // ترتيب ثانوي بناءً على created_at
+                       ->orderBy('id', 'desc') // ترتيب ثالث بناءً على id
                        ->get();
 
         $orderDetails = $orders->map(function ($order) {
@@ -57,8 +60,6 @@ class OrderController extends Controller
             'orders' => $orderDetails,
         ], 200);
     }
-
-
 /////////////////////////////////////////////////////test ok
 public function createOrder(Request $request)
 {
@@ -487,7 +488,7 @@ public function createOrder(Request $request)
                       }, 'delivery' => function ($query) {
                           $query->select('id', 'order_id', 'driver_id', 'delivery_fee')
                                 ->with(['driver' => function ($q) {
-                                    $q->select('id', 'first_name', 'last_name', 'phone'); 
+                                    $q->select('id', 'first_name', 'last_name', 'phone');
                                 }]);
                       }])
                       ->first();
@@ -496,10 +497,7 @@ public function createOrder(Request $request)
             return response()->json(['error' => 'Order not found'], 404);
         }
     
-        if (!$order->delivery) {
-            return response()->json(['error' => 'Delivery information not found for this order'], 400);
-        }
-          $shippingAddress = UsersAddress::where('user_id', $userId)
+        $shippingAddress = UsersAddress::where('user_id', $userId)
                                        ->where('type', 'shipping')
                                        ->first();
     
@@ -512,10 +510,13 @@ public function createOrder(Request $request)
             'date' => $order->date,
             'status' => $order->last_status,
             'shipping_address' => $shippingAddress->address,
-            'delivery_man' => $order->delivery->driver 
+            'delivery_man' => $order->delivery && $order->delivery->driver 
                 ? ($order->delivery->driver->first_name . ' ' . $order->delivery->driver->last_name) 
                 : 'Not assigned',
-            'delivery_man_phone' => $order->delivery->driver ? $order->delivery->driver->phone : 'Not available',
+            'delivery_man_phone' => $order->delivery && $order->delivery->driver 
+                ? $order->delivery->driver->phone 
+                : 'Not available',
+            'delivery_fee' => $order->delivery ? $order->delivery->delivery_fee : 'Not available',
             'items' => $order->items->map(function ($item) {
                 return [
                     'product_name' => $item->product ? $item->product->product_name : 'Product not found',
@@ -527,7 +528,6 @@ public function createOrder(Request $request)
             'total_price' => $order->items->sum(function ($item) {
                 return $item->price * $item->quantity;
             }),
-            'delivery_fee' => $order->delivery->delivery_fee,
         ];
     
         return response()->json([
@@ -536,8 +536,6 @@ public function createOrder(Request $request)
             'order' => $orderDetails,
         ], 200);
     }
-    
-
     public function getOrdersByStatus(Request $request, $status)
     {
         try {
@@ -569,7 +567,9 @@ public function createOrder(Request $request)
                 $query->where('last_status', $mappedStatus);
             }
 
-            $orders = $query->get();
+            $orders = $query->orderBy('created_at', 'desc') 
+                            ->orderBy('id', 'desc')
+                            ->get();
 
             return response()->json([
                 'message' => ucfirst($status) . ' orders retrieved successfully',
@@ -580,7 +580,7 @@ public function createOrder(Request $request)
                     });
                     $response = [
                         'order_number' => $order->id,
-                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
+                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
                         'status' => $order->last_status,
                     ];
@@ -611,7 +611,7 @@ public function createOrder(Request $request)
 
         if ($order->last_status === 'delivered') {
             if ($order->delivery && $order->delivery->delivery_time) {
-                return 'Delivered on ' . $order->delivery->delivery_time->format('d/m/Y h:i A');
+                return $order->delivery->delivery_time->format('d/m/Y h:i A');
             }
             return 'Delivered';
         }
@@ -624,10 +624,11 @@ public function createOrder(Request $request)
 
             if ($now->lessThan($estimatedDeliveryTime)) {
                 $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
-                return "Arriving in $remainingMinutes minutes";
+                
+                return " " . intval($remainingMinutes) ;
             }
 
-            return 'Late';
+            return $estimatedDeliveryTime->format('d/m/Y h:i A');
         }
 
         return 'Unknown status';
