@@ -643,7 +643,7 @@ public function createOrder(Request $request)
             if ($now->lessThan($estimatedDeliveryTime)) {
                 $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
                
-                return " " . intval($remainingMinutes) . " minutes";
+                return " " . intval($remainingMinutes) ;
             }
 
             return $estimatedDeliveryTime->format('d/m/Y h:i A');
