@@ -554,7 +554,7 @@ public function createOrder(Request $request)
         ], 200);
     }
 
-    public function getOrdersByStatus(Request $request, $status)
+  public function getOrdersByStatus(Request $request, $status)
     {
         try {
             $statusMap = [
@@ -642,7 +642,8 @@ public function createOrder(Request $request)
 
             if ($now->lessThan($estimatedDeliveryTime)) {
                 $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
-                return " $remainingMinutes minutes";
+               
+                return " " . intval($remainingMinutes) . " minutes";
             }
 
             return $estimatedDeliveryTime->format('d/m/Y h:i A');
