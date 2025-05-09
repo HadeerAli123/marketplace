@@ -32,6 +32,9 @@ class ProductController extends Controller
                 'product_name' => $product->product_name,
                 'stock' => $product->stock,
                 'cover_image' => asset('uploads/products/' . $product->cover_image),
+                'images' => ProductImageResource::collection($product->images),
+                'description' => $product->description,
+                'category' => new CategoryResource($product->category),
                 'price' => $isSpotModeActive ? $product->price : $product->regular_price,
             ];
         });
@@ -43,7 +46,36 @@ class ProductController extends Controller
     } 
 
 
-
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+    
+        if (!$query) {
+            return response()->json(['message' => 'Please provide a search query.'], 400);
+        }
+    
+        $products = Product::with('category')
+            ->where('product_name', 'LIKE', "%{$query}%")
+            ->orWhere('description', 'LIKE', "%{$query}%")
+            ->get();
+    
+        $formatted = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'product_name' => $product->product_name,
+                'price' => $product->price,
+                'stock' => $product->stock,
+                'regular_price' => $product->regular_price,
+                'category_name' => $product->category?->category_name,
+                'image' => $product->cover_image
+                    ? asset('uploads/products/' . $product->cover_image)
+                    : asset('uploads/products/default.png'),
+            ];
+        });
+    
+        return response()->json($formatted);
+    }
+    
     
     public function getProductsByCategory($categoryId, Request $request)
    
@@ -68,6 +100,7 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'product_name' => $product->product_name,
                     'price' => $price,
+                    'regular_price' => $product->regular_price,
                     'stock' => $product->stock,
                     'description' => $product->description,
                     'cover_image' => asset('uploads/products/' . $product->cover_image),
@@ -108,6 +141,8 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'product_name' => $product->product_name,
                     'price' => $price,
+                    'stock' => $product->stock,
+                    'regular_price' => $product->regular_price,
                     'description' => $product->description,
                     'cover_image' => asset('uploads/products/' . $product->cover_image),
                     'category' => new CategoryResource($product->category),
@@ -132,6 +167,7 @@ class ProductController extends Controller
                 'images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp,avif|max:2048',
                 'stock' => 'required|integer|min:0',
                 'category_id' => 'required|integer|exists:categories,id',
+                'regular_price' => 'nullable|numeric|min:0',
             ], [
                 'product_name.required' => 'Product name is required.',
                 'product_name.string' => 'Product name must be a string.',
@@ -309,6 +345,19 @@ class ProductController extends Controller
             return response()->json(['error' => 'Failed to update product: ' . $e->getMessage()], 500);
         }
     }
+    public function destroy($id)
+{
+    $product = Product::find($id);
+
+    if (!$product) {
+        return response()->json(['message' => 'Product not found.'], 404);
+    }
+
+    $product->delete();
+
+    return response()->json(['message' => 'Product soft deleted successfully.']);
+}
+
 }
 
   // public function show(Product $product)
@@ -339,14 +388,7 @@ class ProductController extends Controller
     // }
 
 
-        // public function destroy(Product $product)
-        // {
-        //     if (!$product) {
-        //         return response()->json(['message' => 'Product not found.'], 404);
-        //     }
-        //     $product->delete();
-        //     return response()->json(['message' => 'Product soft deleted successfully.']);
-        // }
+       
         
     // public function restore($product_id)
     // {

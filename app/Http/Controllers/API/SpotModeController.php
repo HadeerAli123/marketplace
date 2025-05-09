@@ -46,11 +46,11 @@ class SpotModeController extends Controller
                     ->get();
                 foreach ($carts as $cart) {
                     foreach ($cart->items as $item) {
-                        if ($item->product && !$item->product->trashed()) { 
+                        if ($item->product && !$item->product->trashed()) {
                             $item->update(['price' => $item->product->price]);
                         } else {
                             \Log::warning("العنصر {$item->id} في الكارت مالهوش منتج أو محذوف.");
-                            $item->delete();
+                            $item->delete(); 
                         }
                     }
                     $cart->total_price = $cart->items->sum(function ($item) {

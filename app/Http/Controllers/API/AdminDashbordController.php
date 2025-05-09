@@ -30,7 +30,6 @@ class AdminDashbordController extends Controller
 
         foreach ($drivers as $driver) {
             $deliveries = $driver->deliveries()
-                ->where('status', 'delivered')
                 ->with('order.orderItems')
                 ->get();
 
@@ -114,6 +113,7 @@ class AdminDashbordController extends Controller
                         'id' => $product->id,
                         'name' => $product->name,
                         'price' => $product->price,
+                        'regular_price' => $product->regular_price,
                         'stock' => $product->stock,
                     ];
                 }),
@@ -239,24 +239,27 @@ class AdminDashbordController extends Controller
 
     public function getProducts()
     {
-        $products = Product::with('category')->get();
-
+        $products = Product::with('category')
+            ->whereNull('deleted_at') // استبعاد المحذوفة
+            ->get();
+    
         $formatted = $products->map(function ($product) {
             return [
                 'price' => $product->price,
+                'regular_price' => $product->regular_price,
                 'category_name' => $product->category?->category_name,
                 'id' => $product->id,
                 'product_name' => $product->product_name,
                 'stock' => $product->stock,
                 'image' => $product->cover_image
-                    ?  asset('uploads/products/' . $product->cover_image)
+                    ? asset('uploads/products/' . $product->cover_image)
                     : asset('uploads/products/default.png'),
-
             ];
         });
-
+    
         return response()->json($formatted);
     }
+    
 
 
     public function getDailySummaries()

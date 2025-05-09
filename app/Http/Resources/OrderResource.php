@@ -18,16 +18,24 @@ class OrderResource extends JsonResource
             'id' => $this->id,
             'date' => $this->date->toDateString(),
             'status' => $this->last_status,
-            'delivery_status' => $this->delivery->status ?? null,
-            'notes' => $this->notes,
+            'delivery_status' => function () {
+                if ($this->last_status === 'delivered') {
+                    return 'Order Delivered';
+                } elseif ($this->last_status === 'shipped') {
+                    return 'On the way';
+                } elseif ($this->delivery) {
+                    return 'Accepted Order';
+                }
+                return null;
+            },            'notes' => $this->notes,
             'user' => [
                 'id' => $this->user->id,
                 'name' => $this->user->first_name . ' ' . $this->user->last_name,
             ],
             'items' => $this->items->map(function ($item) {
                 return [
-                    'product_name' => $item->product->product_name,
-                    'quantity' => $item->quantity,
+                    'product_name' => $item->product->product_name ?? null,
+                    'quantity' => $item->quantity ?? null,
 
                 ];
             }),
@@ -37,7 +45,8 @@ class OrderResource extends JsonResource
                 'state' => $this->user->shippingAddress->state ?? '',
                 'zip_code' => $this->user->shippingAddress->zip_code ?? '',
                 'country' => $this->user->shippingAddress->country?? '',
-
+                'lat'=>$this->user->shippingAddress->lat?? '',
+                'lng'=>$this->user->shippingAddress->lng?? ''
             ],
             'total' => $this->items->sum(function ($item) {
             return $item->price * $item->quantity;

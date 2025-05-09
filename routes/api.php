@@ -17,6 +17,7 @@ use App\Http\Controllers\API\ContactUsController;
 use App\Http\Controllers\API\UserAddressesController;
 use App\Http\Controllers\API\SpotModeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotificationController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
@@ -24,37 +25,51 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->delete('delete-account', [AuthController::class, 'deleteAccount']);
 Route::middleware('auth:sanctum')->post('change-password', [AuthController::class, 'changePassword']);
 
+Route::post('notifications/all', [NotificationController::class, 'sendToAllUsers']);
+Route::post('notifications/customer', [NotificationController::class, 'sendToCustomer']);
+Route::post('notifications/driver', [NotificationController::class, 'sendToDriver']);
+Route::post('notifications/all-customer', [NotificationController::class, 'sendToAllCustomer']);
+Route::post('notifications/all-driver', [NotificationController::class, 'sendToAllDrivers']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::put('notifications/read/{notification}', [NotificationController::class, 'markAsRead']);
+    Route::put('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+});
+
+Route::middleware('auth:sanctum')->post('update-fcm-token', [NotificationController::class, 'updateFcmToken']);
+
 Route::post('forgot-password/send-otp', [AuthController::class, 'sendOtpForPasswordReset']);
 Route::post('forgot-password/verify-otp', [AuthController::class, 'verifyResetOtp']);
 Route::post('forgot-password/reset', [AuthController::class, 'resetPassword']);
 Route::get('products/search', [ProductController::class, 'search']);
+Route::get('categories', [AdminDashbordController::class, 'getCategories']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('edit-profile', [AuthController::class, 'editProfile']);
-        Route::get('categories', [AdminDashbordController::class, 'getCategories']);
+        Route::get('customer/get-profile', [AuthController::class, 'show']);
+        Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
 
 
       // For Customers
     Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
-        Route::get('customer/get-profile', [AuthController::class, 'show']);
     });
 
-    // For Drivers
-    Route::middleware(['auth:sanctum', DriverMiddleware::class])->group(function () {
-        Route::get('driver/get-profile', [AuthController::class, 'show']);
-    });
 
     // For Admins
     Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
         Route::get('admin/get-profile', [AuthController::class, 'show']);
+        Route::get('notifications/insights', [NotificationController::class, 'getInsights']);
     });
 
-
+    // For Drivers
         Route::middleware(['auth:sanctum',  DriverMiddleware::class])->group(function () {
             Route::get('/available-for-delivery', [DeliveryController::class, 'getAvailableOrdersForDelivery']);
             Route::get('/get-My-orders', [DeliveryController::class, 'getMyDeliveries']);
-            Route::get('/order-details/{id}', [DeliveryController::class, 'show']);
+            Route::get('driver/get-profile', [AuthController::class, 'show']);
+            Route::post('accept-order/{order}', [DeliveryController::class, 'acceptOrder']);
+            Route::post('delivery/cancel-order/{orderId}', [DeliveryController::class, 'cancelAcceptance']);
         });
         Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
             Route::get('/admin/dashboard', function () {
@@ -76,6 +91,7 @@ Route::get('products/search', [ProductController::class, 'search']);
             Route::get('allproducts', [AdminDashbordController::class, 'getProducts']);
             Route::get('getUser/{id}', [AdminDashbordController::class, 'getUser']);
             Route::delete('destroyuser/{id}', [AdminDashbordController::class, 'destroyuser']);
+            Route::delete('destroyproduct/{id}', [ProductController::class, 'destroy']);
 
 
         });
@@ -92,6 +108,8 @@ Route::get('/user', function (Request $request) {
 
 Route::apiResource('orders', OrderController::class)->middleware('auth:sanctum');
 Route::apiResource('order-items', OrderItemsController::class);
+Route::middleware('auth:sanctum')->put('order-status/{order}', [OrderController::class, 'updateStatus']);
+
 
 // products
 Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
@@ -100,10 +118,10 @@ Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
     // Route::get('/products/deleted', [ProductController::class, 'getAlldeleted']);
     // Route::get('/products/restore/{product_id}',[ProductController::class, 'restore']);
 });
+Route::get('/products/details/{id}', [ProductController::class, 'productDetails']);
 
 Route::apiResource('products', ProductController::class)->only([ 'index']);
 Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
-    Route::get('/products/details/{id}', [ProductController::class, 'productDetails']);
     Route::get('/products/byCategory/{categoryId}', [ProductController::class, 'getProductsByCategory']);
 });
 

@@ -18,6 +18,7 @@ class ProductResource extends JsonResource
             'price' => $isSpotModeActive ? $this->price : $this->regular_price,
             'description' => $this->description,
             'stock' => $this->stock,
+            'regular_price' => $this->regular_price,
             'cover_image' => asset('uploads/products/' . $this->cover_image),
             'category' => new CategoryResource($this->whenLoaded('category')),
             'user' => new UserResource($this->whenLoaded('user')),
