@@ -48,7 +48,8 @@ class FirebaseNotificationService
             'Authorization' => 'key=' . $this->serverKey,
             'Content-Type' => 'application/json',
         ])->post('https://fcm.googleapis.com/fcm/send', $payload);
-
+dd($response->json(),'payload',$payload);
         return $response->json();
+
     }
 }
