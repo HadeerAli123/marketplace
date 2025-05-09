@@ -17,6 +17,22 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+
+public function updateStatus(Request $request, $id)
+{
+    $request->validate([
+        'status' => 'required|string',
+    ]);
+    $order = Order::findOrFail($id);
+    $order->last_status = $request->status;
+    $order->save();
+
+    return response()->json([
+        'message' => 'Order status updated successfully.',
+        'order' => $order,
+    ]);
+}
+
     
     ///////////////////////////////////////////////testok
     

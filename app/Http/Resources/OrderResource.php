@@ -37,7 +37,8 @@ class OrderResource extends JsonResource
                 'state' => $this->user->shippingAddress->state ?? '',
                 'zip_code' => $this->user->shippingAddress->zip_code ?? '',
                 'country' => $this->user->shippingAddress->country?? '',
-
+                'lat'=>$this->user->shippingAddress->lat?? '',
+                'lng'=>$this->user->shippingAddress->lng?? ''
             ],
             'total' => $this->items->sum(function ($item) {
             return $item->price * $item->quantity;
