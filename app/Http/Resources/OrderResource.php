@@ -18,8 +18,16 @@ class OrderResource extends JsonResource
             'id' => $this->id,
             'date' => $this->date->toDateString(),
             'status' => $this->last_status,
-            'delivery_status' => $this->delivery->status ?? null,
-            'notes' => $this->notes,
+            'delivery_status' => function () {
+                if ($this->last_status === 'delivered') {
+                    return 'Order Delivered';
+                } elseif ($this->last_status === 'shipped') {
+                    return 'On the way';
+                } elseif ($this->delivery) {
+                    return 'Accepted Order';
+                }
+                return null;
+            },            'notes' => $this->notes,
             'user' => [
                 'id' => $this->user->id,
                 'name' => $this->user->first_name . ' ' . $this->user->last_name,
