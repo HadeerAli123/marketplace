@@ -598,7 +598,7 @@ public function createOrder(Request $request)
                     });
                     $response = [
                         'order_number' => $order->id,
-                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) . ' SAR' : 'Not available',
+                        'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) : 'Not available',
                         'created_at' => $order->created_at->format('d/m/Y h:i A'),
                         'status' => $order->last_status,
                     ];
@@ -629,7 +629,7 @@ public function createOrder(Request $request)
 
         if ($order->last_status === 'delivered') {
             if ($order->delivery && $order->delivery->delivery_time) {
-                return $order->delivery->delivery_time->format('d/m/Y h:i A');
+                return round($order->delivery->delivery_time->format('d/m/Y h:i A'), 2);
             }
             return 'Delivered';
         }
@@ -641,11 +641,11 @@ public function createOrder(Request $request)
             $now = now();
 
             if ($now->lessThan($estimatedDeliveryTime)) {
-                $remainingMinutes = $now->diffInMinutes($estimatedDeliveryTime);
+                $remainingMinutes = round($now->diffInMinutes($estimatedDeliveryTime), 2);
                 return "Arriving in $remainingMinutes minutes";
             }
 
-            return $estimatedDeliveryTime->format('d/m/Y h:i A');
+            return round($estimatedDeliveryTime->format('d/m/Y h:i A'), 2);
         }
 
         return 'Unknown status';

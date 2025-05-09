@@ -173,13 +173,13 @@ class NotificationController extends Controller
         $messaging = Firebase::messaging();
 
         $message = CloudMessage::withTarget('token', $token)
-    ->withNotification(FCMNotification::create($title, $body))
-    ->withData([
-        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-        'status'       => 'done',
-        'title'        => $title,
-        'body'         => $body,
-    ]);
+            ->withNotification(FCMNotification::create($title, $body))
+            ->withData([
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                'status'       => 'done',
+                'title'        => $title,
+                'body'         => $body,
+            ]);
         $messaging->send($message);
     }
 
