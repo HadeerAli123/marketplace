@@ -151,7 +151,7 @@ class NotificationController extends Controller
                 'is_read' => false,
             ]);
         }
-        
+
         // $tokens = $users->pluck('fcm_token')->toArray();
 
         // $this->sendFCM($tokens, $request->title, $request->body);
@@ -174,7 +174,7 @@ class NotificationController extends Controller
 
         $message = CloudMessage::withTarget('token', $token)
             ->withNotification(FCMNotification::create($title, $body));
-
+dd($message);
         $messaging->send($message);
     }
 
