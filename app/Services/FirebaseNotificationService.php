@@ -29,17 +29,18 @@ class FirebaseNotificationService
 
         $payload = [
             'to' => $token,
-            'notification' => [
-                'title' => $title,
-                'body'  => $body,
-                'sound' => 'default',
-            ],
             'data' => [
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                 'title' => $title,
                 'body' => $body,
                 'status' => 'done',
             ],
+            'notification' => [
+                'title' => $title,
+                'body'  => $body,
+                'sound' => 'default',
+            ],
+           
         ];
         
 
