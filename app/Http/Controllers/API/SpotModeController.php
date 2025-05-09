@@ -41,7 +41,7 @@ class SpotModeController extends Controller
             if ($status === 'active') {
                 $carts = Cart::where('status', 'pending')
                     ->with(['items.product' => function ($query) {
-                        $query->whereNull('deleted_at'); // جيب بس المنتجات اللي مش محذوفة
+                        $query->whereNull('deleted_at'); 
                     }])
                     ->get();
                 foreach ($carts as $cart) {
@@ -87,12 +87,12 @@ class SpotModeController extends Controller
 
             $carts = Cart::where('status', 'pending')
                 ->with(['items.product' => function ($query) {
-                    $query->whereNull('deleted_at'); // جيب بس المنتجات اللي مش محذوفة
+                    $query->whereNull('deleted_at'); 
                 }])
                 ->get();
             foreach ($carts as $cart) {
                 foreach ($cart->items as $item) {
-                    if ($item->product && !$item->product->trashed()) { // لو المنتج موجود ومش محذوف
+                    if ($item->product && !$item->product->trashed()) { 
                         $item->update(['price' => $item->product->regular_price]);
                     } else {
                         \Log::warning("العنصر {$item->id} في الكارت مالهوش منتج أو محذوف.");

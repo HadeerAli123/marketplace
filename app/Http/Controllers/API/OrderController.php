@@ -32,9 +32,9 @@ class OrderController extends Controller
                                      $q->select('id', 'product_name');
                                  }]);
                        }])
-                       ->orderBy('date', 'desc') // الترتيب الأساسي بناءً على date
-                       ->orderBy('created_at', 'desc') // ترتيب ثانوي بناءً على created_at
-                       ->orderBy('id', 'desc') // ترتيب ثالث بناءً على id
+                       ->orderBy('date', 'desc') 
+                       ->orderBy('created_at', 'desc') 
+                       ->orderBy('id', 'desc') 
                        ->get();
 
         $orderDetails = $orders->map(function ($order) {
