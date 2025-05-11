@@ -14,6 +14,12 @@ class SpotModeController extends Controller
 {
     public function activate(Request $request)
     {
+
+             if (empty($request->all())) {
+            \Log::warning('Request body is empty');
+            return response()->json(['error' => 'Request body is empty'], 400);
+        } 
+        
         $request->validate([
             'activate_time' => 'required|date',
             'closing_time' => 'required|date|after:activate_time',
