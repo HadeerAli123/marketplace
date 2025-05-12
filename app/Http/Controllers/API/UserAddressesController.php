@@ -26,15 +26,20 @@ class UserAddressesController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'country' => 'required|string',
-            'state' => 'nullable|string',
             'zip_code' => 'nullable|string',
-            'city' => 'required|string',
+            'city' => ['required', 'string', function ($attribute, $value, $fail) {
+                $validCities = array_merge(
+                    array_column(config('cities'), 'name_ar'),
+                    array_column(config('cities'), 'name_en')
+                );
+                if (!in_array($value, $validCities)) {
+                    $fail('The selected city is invalid.');
+                }
+            }],
             'address' => 'required|string',
             'lat' => 'nullable|numeric|between:-90,90',
             'lng' => 'nullable|numeric|between:-180,180',
             'type' => 'required|in:billing,shipping',
-            'company_name' => 'nullable|string',
         ]);
 
         $existingAddress = UsersAddress::where('user_id', $user->id)
@@ -50,15 +55,12 @@ class UserAddressesController extends Controller
 
         $address = UsersAddress::create([
             'user_id' => $user->id,
-            'country' => $request->country,
-            'state' => $request->state,
             'zip_code' => $request->zip_code,
             'city' => $request->city,
             'address' => $request->address,
             'lat' => $request->lat,
             'lng' => $request->lng,
             'type' => $request->type,
-            'company_name' => $request->company_name,
         ]);
 
         return response()->json([
@@ -68,13 +70,14 @@ class UserAddressesController extends Controller
         ], 201);
     }
 
-
     public function show($id)
     {
         try {
             $user = Auth::user();
 
-            $address = UsersAddress::where('user_id', $user->id);
+            $address = UsersAddress::where('user_id', $user->id)
+                                   ->where('id', $id)
+                                   ->firstOrFail();
 
             return response()->json([
                 'status' => 'success',
@@ -88,25 +91,31 @@ class UserAddressesController extends Controller
         }
     }
 
-
     public function update(Request $request, $id)
     {
         $user = Auth::user();
         $address = UsersAddress::where('user_id', $user->id)->where('id', $id)->firstOrFail();
 
         $request->validate([
-            'country' => 'nullable|string',
-            'state' => 'nullable|string',
             'zip_code' => 'nullable|string',
-            'city' => 'nullable|string',
+            'city' => ['nullable', 'string', function ($attribute, $value, $fail) {
+                if ($value) {
+                    $validCities = array_merge(
+                        array_column(config('cities'), 'name_ar'),
+                        array_column(config('cities'), 'name_en')
+                    );
+                    if (!in_array($value, $validCities)) {
+                        $fail('The selected city is invalid.');
+                    }
+                }
+            }],
             'address' => 'nullable|string',
             'lat' => 'nullable|numeric|between:-90,90',
             'lng' => 'nullable|numeric|between:-180,180',
             'type' => 'nullable|in:billing,shipping',
-            'company_name' => 'nullable|string',
         ]);
 
-        $data = $request->only(['country', 'state', 'zip_code', 'city', 'address', 'lat', 'lng', 'type', 'company_name']);
+        $data = $request->only(['zip_code', 'city', 'address', 'lat', 'lng', 'type']);
 
         if ($request->has('type') && $address->type !== $request->type) {
             $existingAddress = UsersAddress::where('user_id', $user->id)
@@ -120,6 +129,7 @@ class UserAddressesController extends Controller
         }
 
         $address->update(array_filter($data));
+        $address->makeHidden(['country', 'state', 'company_name']);
 
         return response()->json([
             'status' => 'success',
@@ -177,6 +187,16 @@ class UserAddressesController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $shippingAddress,
+        ], 200);
+    }
+
+    public function getCities()
+    {
+        $cities = config('cities');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $cities,
         ], 200);
     }
 }

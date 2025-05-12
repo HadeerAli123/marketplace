@@ -131,6 +131,7 @@ Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function (
         Route::post('/orders', [OrderController::class, 'createOrder']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::get('/orders/status/{status}', [OrderController::class, 'getOrdersByStatus']);
+        Route::post('/orders/reorder/{orderId}', [OrderController::class, 'reorder']);
 
         // Route::put('/orders/{orderId}', [OrderController::class, 'updateOrder']);
         // Route::post('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
@@ -164,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('user-addresses', UserAddressesController::class);
     Route::get('/addresses/billing', [UserAddressesController::class, 'getBillingAddress'])->name('addresses.billing');
 Route::get('/addresses/shipping', [UserAddressesController::class, 'getShippingAddress'])->name('addresses.shipping');
+Route::get('/cities', [UserAddressesController::class, 'getCities']);
 });
 
 ///spot mode

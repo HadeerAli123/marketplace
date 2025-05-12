@@ -9,6 +9,7 @@ use App\Models\SpotMode;
 use App\Models\UsersAddress;
 use App\Models\OrderItem;
 use App\Models\Delivery;
+use App\Models\CartItem;
 use App\Models\User;
 use App\Models\Cart;
 use App\Models\Product;
@@ -649,4 +650,112 @@ public function createOrder(Request $request)
 
         return 'Unknown status';
     }
+    public function reorder(Request $request, $orderId)
+    {
+        $userId = auth()->id();
+
+      
+        $order = Order::where('id', $orderId)
+                      ->where('user_id', $userId)
+                      ->with(['items' => function ($query) {
+                          $query->select('id', 'order_id', 'product_id', 'quantity')
+                                ->with(['product' => function ($q) {
+                                    $q->select('id', 'price', 'regular_price', 'stock');
+                                }]);
+                      }])
+                      ->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Order not found or does not belong to you'], 404);
+        }
+
+        if ($order->items->isEmpty()) {
+            return response()->json(['error' => 'Order has no items to reorder'], 400);
+        }
+
+        foreach ($order->items as $item) {
+            $product = $item->product;
+
+            if (!$product) {
+                return response()->json(['error' => 'Product with ID ' . $item->product_id . ' not found'], 404);
+            }
+
+            if ($product->stock <= 0) {
+                return response()->json(['error' => 'Product ' . $item->product->product_name . ' is out of stock'], 400);
+            }
+
+            if ($item->quantity > $product->stock) {
+                return response()->json(['error' => 'Requested quantity for ' . $item->product->product_name . ' exceeds available stock'], 400);
+            }
+        }
+
+        DB::beginTransaction();
+
+        try {
+           
+            $cart = Cart::where('user_id', $userId)
+                        ->where('status', 'pending')
+                        ->first();
+
+            if (!$cart) {
+                $cart = Cart::create([
+                    'user_id' => $userId,
+                    'status' => 'pending',
+                ]);
+            }
+
+            $isSpotModeActive = SpotMode::isActive();
+
+     
+            foreach ($order->items as $item) {
+                $product = $item->product;
+                $price = $isSpotModeActive ? $product->price : $product->regular_price;
+
+               
+                $existingCartItem = CartItem::where('cart_id', $cart->id)
+                                           ->where('product_id', $item->product_id)
+                                           ->first();
+
+                if ($existingCartItem) {
+         
+                    $newQuantity = $existingCartItem->quantity + $item->quantity;
+
+                
+                    if ($newQuantity > $product->stock) {
+                        throw new \Exception('Total requested quantity for ' . $product->product_name . ' exceeds available stock');
+                    }
+
+                    $existingCartItem->update([
+                        'quantity' => $newQuantity,
+                        'price' => $price,
+                    ]);
+                } else {
+                 
+                    CartItem::create([
+                        'cart_id' => $cart->id,
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'price' => $price,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Order items added to cart successfully. You can now proceed to checkout.',
+                'cart_id' => $cart->id,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Reorder failed', [
+                'message' => $e->getMessage(),
+                'user_id' => $userId,
+                'order_id' => $orderId,
+                'stack' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Reorder failed: ' . $e->getMessage()], 500);
+        }
+    }
+
 }
