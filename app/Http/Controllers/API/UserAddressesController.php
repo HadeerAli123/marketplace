@@ -15,6 +15,10 @@ class UserAddressesController extends Controller
         $user = Auth::user();
         $addresses = UsersAddress::where('user_id', $user->id)->get();
 
+        $addresses->each(function ($address) {
+            $address->makeHidden(['country', 'state', 'company_name']);
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => $addresses,
@@ -78,6 +82,8 @@ class UserAddressesController extends Controller
             $address = UsersAddress::where('user_id', $user->id)
                                    ->where('id', $id)
                                    ->firstOrFail();
+
+            $address->makeHidden(['country', 'state', 'company_name']);
 
             return response()->json([
                 'status' => 'success',
@@ -164,6 +170,8 @@ class UserAddressesController extends Controller
             ], 404);
         }
 
+        $billingAddress->makeHidden(['country', 'state', 'company_name']);
+
         return response()->json([
             'status' => 'success',
             'data' => $billingAddress,
@@ -183,6 +191,9 @@ class UserAddressesController extends Controller
                 'message' => 'Shipping address not found.',
             ], 404);
         }
+
+     
+        $shippingAddress->makeHidden(['country', 'state', 'company_name']);
 
         return response()->json([
             'status' => 'success',
