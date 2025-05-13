@@ -12,17 +12,39 @@ use Illuminate\Support\Facades\DB;
 
 class SpotModeController extends Controller
 {
-    public function activate(Request $request)
+public function activate(Request $request)
     {
-
-             if (empty($request->all())) {
-            \Log::warning('Request body is empty');
-            return response()->json(['error' => 'Request body is empty'], 400);
-        } 
         
-        $request->validate([
-            'activate_time' => 'required|date',
-            'closing_time' => 'required|date|after:activate_time',
+        if (empty($request->all())) {
+            \Log::warning('بيانات الطلب فارغة');
+            return response()->json(['error' => 'بيانات الطلب فارغة'], 400);
+        }
+
+        
+        \Log::info('بيانات الطلب: ' . json_encode($request->all()));
+
+
+        $validated = $request->validate([
+            'activate_time' => [
+                'required',
+                'date_format:Y-m-d H:i:s',
+                function ($attribute, $value, $fail) {
+                    $currentTime = now();
+                    $activateTime = \Carbon\Carbon::parse($value);
+                   
+                    \Log::info('وقت السيرفر الحالي: ' . $currentTime->toDateTimeString() . ' | التوقيت: ' . $currentTime->getTimezone()->getName());
+                    \Log::info('الوقت المرسل: ' . $activateTime->toDateTimeString() . ' | التوقيت: ' . $activateTime->getTimezone()->getName());
+                    
+                    if ($activateTime->format('Y-m-d H:i') < $currentTime->format('Y-m-d H:i')) {
+                        $fail('الوقت المحدد لا يمكن أن يكون في الماضي.');
+                    }
+                },
+            ],
+            'closing_time' => [
+                'required',
+                'date_format:Y-m-d H:i:s',
+                'after:activate_time',
+            ],
         ]);
 
         if (SpotMode::isActive()) {
@@ -30,24 +52,24 @@ class SpotModeController extends Controller
         }
 
         $currentTime = now();
-        $activateTime = \Carbon\Carbon::parse($request->activate_time);
+        $activateTime = \Carbon\Carbon::parse($validated['activate_time']);
 
         DB::beginTransaction();
         try {
-            $status = $currentTime->greaterThanOrEqualTo($activateTime) ? 'active' : 'pending';
+            $status = $currentTime->greaterThanOrEqualTo($activateTime) ? 'active' : 'active';
 
             $spotMode = SpotMode::create([
                 'user_id' => auth()->id(),
                 'status' => $status,
-                'activate_time' => $request->activate_time,
-                'closing_time' => $request->closing_time,
+                'activate_time' => $validated['activate_time'],
+                'closing_time' => $validated['closing_time'],
                 'created_at' => now(),
             ]);
 
             if ($status === 'active') {
                 $carts = Cart::where('status', 'pending')
                     ->with(['items.product' => function ($query) {
-                        $query->whereNull('deleted_at'); 
+                        $query->whereNull('deleted_at');
                     }])
                     ->get();
                 foreach ($carts as $cart) {
@@ -56,7 +78,7 @@ class SpotModeController extends Controller
                             $item->update(['price' => $item->product->price]);
                         } else {
                             \Log::warning("العنصر {$item->id} في الكارت مالهوش منتج أو محذوف.");
-                            $item->delete(); 
+                            $item->delete();
                         }
                     }
                     $cart->total_price = $cart->items->sum(function ($item) {
@@ -68,18 +90,17 @@ class SpotModeController extends Controller
 
             DB::commit();
             return response()->json([
-                'message' => $status === 'active' 
-                    ? 'Spot Mode activated successfully and cart prices updated' 
+                'message' => $status === 'active'
+                    ? 'Spot Mode activated successfully and cart prices updated'
                     : 'Spot Mode scheduled successfully',
                 'spot_mode' => $spotMode,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Failed to activate Spot Mode: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to activate Spot Mode: ' . $e->getMessage()], 500);
+            \Log::error('فشل تفعيل Spot Mode: ' . $e->getMessage());
+            return response()->json(['error' => 'فشل تفعيل Spot Mode: ' . $e->getMessage()], 500);
         }
     }
-
     public function deactivate()
     {
         $spotMode = SpotMode::where('status', 'active')->first();
