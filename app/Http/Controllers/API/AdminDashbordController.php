@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Models\OrderItem;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
@@ -99,7 +100,7 @@ class AdminDashbordController extends Controller
                 ->withCount('products')
                 ->withSum('products', 'stock')
                 ->findOrFail($id);
-    
+
             return response()->json([
                 'id' => $category->id,
                 'category_name' => $category->category_name,
@@ -118,7 +119,7 @@ class AdminDashbordController extends Controller
                     ];
                 }),
             ]);
-    
+
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'error',
@@ -132,7 +133,7 @@ class AdminDashbordController extends Controller
             ], 500);
         }
     }
-    
+
 
     public function getUser($id)
     {
@@ -152,7 +153,7 @@ class AdminDashbordController extends Controller
             ], 500);
         }
     }
-    
+
 
 
     public function createCategory(Request $request)
@@ -183,20 +184,20 @@ class AdminDashbordController extends Controller
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
-    
+
         try {
             $category = Category::findOrFail($id);
-            
+
             $data = $request->only(['category_name', 'description']);
-    
+
             if ($request->hasFile('image')) {
                 $data['image'] = ImageService::update($request->file('image'), $category->image, 'uploads/categories');
             }
-    
+
             $category->update($data);
-    
+
             return new CategoryResource($category);
-    
+
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'error',
@@ -210,7 +211,7 @@ class AdminDashbordController extends Controller
             ], 500);
         }
     }
-    
+
 
 
     public function deleteCategory($id)
@@ -242,7 +243,7 @@ class AdminDashbordController extends Controller
         $products = Product::with('category')
             ->whereNull('deleted_at') // استبعاد المحذوفة
             ->get();
-    
+
         $formatted = $products->map(function ($product) {
             return [
                 'price' => $product->price,
@@ -256,10 +257,10 @@ class AdminDashbordController extends Controller
                     : asset('uploads/products/default.png'),
             ];
         });
-    
+
         return response()->json($formatted);
     }
-    
+
 
 
     public function getDailySummaries()
@@ -326,20 +327,20 @@ class AdminDashbordController extends Controller
         $customers = User::where('role', 'customer')
             ->select('id', 'phone', 'created_at', 'status', \DB::raw("CONCAT(first_name, ' ', last_name) AS full_name"))
             ->get();
-    
+
         if ($customers->isEmpty()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No customers found',
             ], 404);
         }
-    
+
         return response()->json([
             'status' => 'success',
             'data' => $customers,
         ]);
     }
-    
+
 
     public function addDriver(Request $request)
     {
@@ -438,25 +439,25 @@ class AdminDashbordController extends Controller
         $today = Carbon::today();
         $lastWeekStart = Carbon::now()->subWeek()->startOfWeek();
         $lastWeekEnd = Carbon::now()->subWeek()->endOfWeek();
-    
+
         // الطلبات خلال الأسبوع الماضي
         $ordersLastWeek = Order::whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
             ->selectRaw('DAYOFWEEK(created_at) as day_of_week, COUNT(*) as total_orders')
             ->groupBy('day_of_week')
             ->orderBy('day_of_week')
             ->get();
-    
+
         // الإيرادات الشهرية
         $ordersPerMonth = Order::with('orderItems')
             ->whereYear('created_at', $today->year)
             ->get()
             ->map(function ($order) {
                 if ($order->orderItems->isEmpty()) return null;
-    
+
                 $totalAmount = $order->orderItems->sum(function ($item) {
                     return $item->price * $item->quantity;
                 });
-    
+
                 return [
                     'month' => $order->created_at->month,
                     'total_amount' => $totalAmount,
@@ -471,32 +472,32 @@ class AdminDashbordController extends Controller
                 ];
             })
             ->values();
-    
+
         // المستخدمين النشطين وغير النشطين
         $activeUsersCount = User::where('status', 'active')->count();
         $inactiveUsersCount = User::where('status', 'inactive')->count();
-    
+
         $totalUsersCount = $activeUsersCount + $inactiveUsersCount;
         $activeUserPercentage = $totalUsersCount > 0 ? ($activeUsersCount / $totalUsersCount) * 100 : 0;
         $inactiveUserPercentage = $totalUsersCount > 0 ? ($inactiveUsersCount / $totalUsersCount) * 100 : 0;
-    
+
         // إحصائيات اليوم والأمس
         $ordersToday = Order::whereDate('created_at', $today)->count();
         $ordersYesterday = Order::whereDate('created_at', $today->copy()->subDay())->count();
         $orderIncreasePercentage = $ordersYesterday > 0 ? (($ordersToday - $ordersYesterday) / $ordersYesterday) * 100 : 0;
-    
+
         $usersToday = User::whereDate('created_at', $today)->count();
         $usersYesterday = User::whereDate('created_at', $today->copy()->subDay())->count();
         $userIncreasePercentage = $usersYesterday > 0 ? (($usersToday - $usersYesterday) / $usersYesterday) * 100 : 0;
-    
+
         $productsToday = Order::whereDate('created_at', $today)->count();
         $productsYesterday = Order::whereDate('created_at', $today->copy()->subDay())->count();
         $productIncreasePercentage = $productsYesterday > 0 ? (($productsToday - $productsYesterday) / $productsYesterday) * 100 : 0;
-    
+
         $driversToday = User::whereDate('created_at', $today)->where('role', 'driver')->count();
         $driversYesterday = User::whereDate('created_at', $today->copy()->subDay())->where('role', 'driver')->count();
         $driverIncreasePercentage = $driversYesterday > 0 ? (($driversToday - $driversYesterday) / $driversYesterday) * 100 : 0;
-    
+
         // إجمالي الإيرادات
         $totalRevenue = Order::with('orderItems')
             ->get()
@@ -506,13 +507,13 @@ class AdminDashbordController extends Controller
             ->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
-    
+
         // أفضل المنتجات حسب المبيعات
         $productSales = OrderItem::selectRaw('product_name, SUM(price * quantity) as total')
             ->groupBy('product_name')
             ->orderByDesc('total')
             ->get();
-    
+
         $topProducts = $productSales->map(function ($item) use ($totalRevenue) {
             return [
                 'product' => $item->product_name,
@@ -520,13 +521,13 @@ class AdminDashbordController extends Controller
                 'percentage' => $totalRevenue > 0 ? round(($item->total / $totalRevenue) * 100, 2) : 0,
             ];
         });
-    
+
         // عدد الطلبات لكل منتج
         $productQuantities = OrderItem::selectRaw('product_name, SUM(quantity) as total_quantity')
             ->groupBy('product_name')
             ->orderByDesc('total_quantity')
             ->get();
-    
+
         return response()->json([
             'orders_last_week' => $ordersLastWeek,
             'orders_per_month' => $ordersPerMonth,
@@ -545,7 +546,7 @@ class AdminDashbordController extends Controller
             'product_quantities' => $productQuantities,
         ]);
     }
-    
+
 
 
 
